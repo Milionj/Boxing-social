@@ -1,0 +1,10 @@
+{
+  "name": "boxing-social/app",
+  "type": "project",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
