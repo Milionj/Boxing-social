@@ -14,4 +14,9 @@ final class Response {
         header('Content-Type: text/html; charset=utf-8');
         echo $html;
     }
+
+    public function redirect(string $path): void {
+        header("Location: {$path}");
+        exit;
+        }
 }

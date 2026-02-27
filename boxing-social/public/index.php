@@ -1,15 +1,6 @@
 <?php
 declare(strict_types=1);
 
-/* <!-- le fichier fait:
-active le mode strict + erreurs en dev
-charge .env à la main (variables de config)
-charge l’autoload Composer
-instancie Request/Response/Router
-déclare 2 routes de test (/ et /health)
-lance le routeur (dispatch) pour servir la requête -->
- */
-
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
@@ -32,22 +23,26 @@ if (is_file($envFile)) {
     }
 }
 
-/* Charger l’autoload de Composer pour que tes classes se chargent automatiquement.
-Sans ça, PHP ne sait pas où trouver :
-App\Core\Router
-App\Database\Database
-etc. */
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Router;
 use App\Database\Database;
+use App\Controllers\AuthController;
 
-/* instanciation des objets principaux */
+session_start();
+
 $request = new Request();
 $response = new Response();
 $router = new Router();
+$router->get('/register', fn() => (new AuthController())->showRegister($response));
+$router->post('/register', fn() => (new AuthController())->register($request, $response));
+
+$router->get('/login', fn() => (new AuthController())->showLogin($response));
+$router->post('/login', fn() => (new AuthController())->login($request, $response));
+
+$router->post('/logout', fn() => (new AuthController())->logout($response));
 
 
 /**
@@ -69,8 +64,8 @@ $router->get('/health', function () use ($response): void {
     $pdo->query('SELECT 1');
     $response->json([
         'status' => 'ok',
-        'db' => 'connected'
+        'db' => 'connected',
     ]);
-    });
+});
 
-    $router->dispatch($request, $response);
+$router->dispatch($request, $response);

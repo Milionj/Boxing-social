@@ -1,8 +1,10 @@
-RewriteEngine On
+DirectoryIndex index.php
 
-# Si le fichier/dossier existe, Apache le sert directement
+FallbackResource /index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-
-# Sinon, tout passe par index.php (front controller)
 RewriteRule ^ index.php [QSA,L]
+</IfModule>
