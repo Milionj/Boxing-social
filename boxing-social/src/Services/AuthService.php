@@ -19,6 +19,18 @@ final class AuthService
         $this->pdo = Database::getConnection();
     }
 
+    public function usernameExists(string $username): bool {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM users WHERE username = :u LIMIT 1');
+        $stmt->execute(['u' => $username]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function emailExists(string $email): bool {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM users WHERE email = :e LIMIT 1');
+        $stmt->execute(['e' => $email]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function register(string $username, string $email, string $password): bool
     {
         $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -42,10 +54,11 @@ final class AuthService
         $stmt->execute(['e' => $email]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password_hash'])) {
+        if (!$user || !password_verify($password, (string) $user['password_hash'])) {
             return false;
         }
 
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             'id' => (int)$user['id'],
             'username' => $user['username'],
@@ -58,7 +71,11 @@ final class AuthService
 
     public function logout(): void
     {
-        unset($_SESSION['user']);
-        session_regenerate_id(true);
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $param = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $param['path'], $param['domain'], $param['secure'], $param['httponly']);
+        }
+        session_destroy();
     }
 }

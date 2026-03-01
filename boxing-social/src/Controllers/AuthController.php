@@ -7,59 +7,172 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Services\AuthService;
 
+/**
+ * Principe important : POST -> redirect -> GET (pattern PRG)
+ */
 final class AuthController
 {
     private AuthService $auth;
 
     public function __construct()
     {
+        // Service d'auth (DB + password_hash/verify)
         $this->auth = new AuthService();
     }
 
+    /**
+     * GET /register
+     * - Récupère les erreurs et anciennes valeurs depuis la session
+     * - Puis les supprime (flash message : affiché une seule fois)
+     * - Charge le template
+     */
     public function showRegister(Response $response): void
     {
+        $errors = $_SESSION['errors'] ?? [];
+        $old = $_SESSION['old'] ?? [];
+
+        // Important : on vide après lecture pour éviter d'afficher les mêmes erreurs au refresh
+        unset($_SESSION['errors'], $_SESSION['old']);
+
         require dirname(__DIR__, 2) . '/templates/register.php';
     }
 
+    /**
+     * POST /register
+     * - Validation des champs
+     * - Vérifie unicité username/email
+     * - Si erreurs : stocke en session + redirect /register
+     * - Si OK : crée l'utilisateur + message success + redirect /login
+     */
     public function register(Request $request, Response $response): void
     {
-        $username = trim((string)$request->input('username', ''));
-        $email = trim((string)$request->input('email', ''));
-        $password = (string)$request->input('password', '');
+        // Nettoyage (trim) + normalisation email en lowercase
+        $username = trim((string) $request->input('username', ''));
+        $email = strtolower(trim((string) $request->input('email', '')));
+        $password = (string) $request->input('password', '');
+        $passwordConfirm = (string) $request->input('password_confirm', '');
 
-        if ($username === '' || $email === '' || $password === '') {
-            $response->html('Champs requis manquants', 422);
+        $errors = [];
+
+        // Règles pseudo : longueur + caractères autorisés
+        if ($username === '' || strlen($username) < 3 || strlen($username) > 30) {
+            $errors[] = 'Le pseudo doit contenir entre 3 et 30 caracteres.';
+        }
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            $errors[] = 'Le pseudo ne doit contenir que lettres, chiffres et underscore.';
+        }
+
+        // Validation email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Email invalide.';
+        }
+
+        // Règles mot de passe : longueur + complexité
+        if (strlen($password) < 8) {
+            $errors[] = 'Le mot de passe doit contenir au moins 8 caracteres.';
+        }
+        if (
+            !preg_match('/[A-Z]/', $password) ||
+            !preg_match('/[a-z]/', $password) ||
+            !preg_match('/[0-9]/', $password)
+        ) {
+            $errors[] = 'Le mot de passe doit contenir majuscule, minuscule et chiffre.';
+        }
+
+        // Confirmation mot de passe
+        if ($password !== $passwordConfirm) {
+            $errors[] = 'La confirmation du mot de passe ne correspond pas.';
+        }
+
+        // Vérifications DB : unicité username/email
+        // (On le fait après les validations basiques pour éviter des requêtes inutiles)
+        if ($this->auth->usernameExists($username)) {
+            $errors[] = 'Ce pseudo est deja utilise.';
+        }
+        if ($this->auth->emailExists($email)) {
+            $errors[] = 'Cet email est deja utilise.';
+        }
+
+        // Si erreurs : on stocke et on redirige vers le formulaire
+        if ($errors !== []) {
+            $_SESSION['errors'] = $errors;
+
+            // old sert à re-remplir le formulaire (sauf le password)
+            $_SESSION['old'] = ['username' => $username, 'email' => $email];
+
+            $response->redirect('/register');
             return;
         }
 
-        $ok = $this->auth->register($username, $email, $password);
+        // Si tout est OK, on crée le compte
+        $this->auth->register($username, $email, $password);
 
-        if (!$ok) {
-            $response->html('Inscription impossible (pseudo/email déjà pris ?)', 400);
-            return;
-        }
+        // Message flash pour la page login
+        $_SESSION['success'] = 'Compte cree. Vous pouvez vous connecter.';
 
         $response->redirect('/login');
     }
 
+    /**
+     * GET /login
+     * - Récupère errors/success/old (flash)
+     * - Les supprime ensuite
+     * - Affiche la page login
+     */
     public function showLogin(Response $response): void
     {
+        $errors = $_SESSION['errors'] ?? [];
+        $success = $_SESSION['success'] ?? '';
+        $old = $_SESSION['old'] ?? [];
+
+        unset($_SESSION['errors'], $_SESSION['success'], $_SESSION['old']);
+
         require dirname(__DIR__, 2) . '/templates/login.php';
     }
 
+    /**
+     * POST /login
+     * - Validation minimale
+     * - Appel AuthService::attemptLogin()
+     * - Si échec : errors + old + redirect /login
+     * - Si OK : redirect /
+     */
     public function login(Request $request, Response $response): void
     {
-        $email = trim((string)$request->input('email', ''));
-        $password = (string)$request->input('password', '');
+        $email = strtolower(trim((string) $request->input('email', '')));
+        $password = (string) $request->input('password', '');
 
+        $errors = [];
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Email invalide.';
+        }
+        if ($password === '') {
+            $errors[] = 'Mot de passe obligatoire.';
+        }
+
+        if ($errors !== []) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['old'] = ['email' => $email];
+            $response->redirect('/login');
+            return;
+        }
+
+        // Vérifie email + mot de passe en base
         if (!$this->auth->attemptLogin($email, $password)) {
-            $response->html('Identifiants invalides', 401);
+            $_SESSION['errors'] = ['Identifiants invalides.'];
+            $_SESSION['old'] = ['email' => $email];
+            $response->redirect('/login');
             return;
         }
 
         $response->redirect('/');
     }
 
+    /**
+     * Déconnexion
+     * Recommandation : POST /logout (plutôt que GET) + CSRF
+     */
     public function logout(Response $response): void
     {
         $this->auth->logout();
