@@ -49,6 +49,8 @@ try {
     $router->post('/profile', fn() => (new ProfileController())->update($request, $response));
 
     $router->post('/logout', fn() => (new AuthController())->logout($response));
+    $router->post('/profile/password', fn() => (new ProfileController())->updatePassword($request, $response));
+
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;

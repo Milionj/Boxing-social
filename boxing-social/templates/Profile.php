@@ -31,6 +31,31 @@
     <button type="submit">Se deconnecter</button>
   </form>
 
+  <?php $errorsPassword = $_SESSION['errors_password'] ?? []; ?>
+<?php $successPassword = $_SESSION['success_password'] ?? ''; ?>
+<?php unset($_SESSION['errors_password'], $_SESSION['success_password']); ?>
+
+<hr>
+<h2>Changer le mot de passe</h2>
+
+<?php if (!empty($successPassword)): ?>
+  <p style="color:#067647;"><?= htmlspecialchars($successPassword, ENT_QUOTES, 'UTF-8') ?></p>
+<?php endif; ?>
+
+<?php if (!empty($errorsPassword)): ?>
+  <?php foreach ($errorsPassword as $error): ?>
+    <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+  <?php endforeach; ?>
+<?php endif; ?>
+
+<form method="post" action="/profile/password">
+  <input type="password" name="current_password" placeholder="Mot de passe actuel" required>
+  <input type="password" name="new_password" placeholder="Nouveau mot de passe" required>
+  <input type="password" name="confirm_password" placeholder="Confirmer le nouveau mot de passe" required>
+  <button type="submit">Mettre a jour le mot de passe</button>
+</form>
+
+
   <p><a href="/">Accueil</a></p>
 </body>
 </html>

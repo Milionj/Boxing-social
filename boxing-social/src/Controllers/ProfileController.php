@@ -6,14 +6,17 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\User;
+use App\Services\AuthService;
 
 final class ProfileController
 {
-    private User $users;
+    private User $users;    
+    private AuthService $auth;
 
     public function __construct()
     {
         $this->users = new User();
+        $this->auth = new AuthService();
     }
 
     private function requireAuth(Response $response): ?int
@@ -89,4 +92,49 @@ final class ProfileController
 
         $response->redirect('/profile');
     }
+
+    public function updatePassword(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $currentPassword = (string) $request->input('current_password', '');
+    $newPassword = (string) $request->input('new_password', '');
+    $confirmPassword = (string) $request->input('confirm_password', '');
+
+    $errors = [];
+
+    if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+        $errors[] = 'Tous les champs mot de passe sont obligatoires.';
+    }
+
+    if (strlen($newPassword) < 8) {
+        $errors[] = 'Le nouveau mot de passe doit contenir au moins 8 caracteres.';
+    }
+
+    if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+        $errors[] = 'Le nouveau mot de passe doit contenir une majuscule, une minuscule et un chiffre.';
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        $errors[] = 'La confirmation du nouveau mot de passe ne correspond pas.';
+    }
+
+    if (!$this->auth->verifyCurrentPassword($userId, $currentPassword)) {
+        $errors[] = 'Mot de passe actuel incorrect.';
+    }
+
+    if ($errors !== []) {
+        $_SESSION['errors_password'] = $errors;
+        $response->redirect('/profile');
+        return;
+    }
+
+    $this->auth->updatePassword($userId, $newPassword);
+    $_SESSION['success_password'] = 'Mot de passe mis a jour avec succes.';
+    $response->redirect('/profile');
+}
+
 }
