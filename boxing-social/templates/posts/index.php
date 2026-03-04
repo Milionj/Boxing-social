@@ -30,6 +30,17 @@
           <p><strong>Lieu:</strong> <?= htmlspecialchars((string)$post['location'], ENT_QUOTES, 'UTF-8') ?></p>
         <?php endif; ?>
 
+        <?php $currentUserId = $_SESSION['user']['id'] ?? null; ?>
+    <?php if ($currentUserId !== null && (int) $currentUserId === (int) $post['user_id']): ?>
+    <p>
+    <a href="/posts/edit?id=<?= (int) $post['id'] ?>">Modifier</a>
+    </p>
+    <form method="post" action="/posts/delete" onsubmit="return confirm('Supprimer ce post ?');">
+    <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
+    <button type="submit">Supprimer</button>
+    </form>
+    <?php endif; ?>
+
         <p><small><?= htmlspecialchars((string)$post['created_at'], ENT_QUOTES, 'UTF-8') ?> | <?= htmlspecialchars((string)$post['visibility'], ENT_QUOTES, 'UTF-8') ?></small></p>
       </article>
     <?php endforeach; ?>

@@ -59,7 +59,10 @@ try {
     $router->get('/posts/create', fn() => (new PostController())->createForm($response));
     $router->post('/posts', fn() => (new PostController())->store($request, $response));
 
-    
+    $router->get('/posts/edit', fn() => (new PostController())->editForm($request, $response));
+    $router->post('/posts/update', fn() => (new PostController())->update($request, $response));
+    $router->post('/posts/delete', fn() => (new PostController())->delete($request, $response));
+
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;

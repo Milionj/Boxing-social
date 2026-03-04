@@ -122,4 +122,86 @@ final class PostController
         $_SESSION['success_posts'] = 'Post cree avec succes.';
         $response->redirect('/posts');
     }
+    public function editForm(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    if ($postId <= 0) {
+        $response->errorPage(404, '404');
+        return;
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null || (int) $post['user_id'] !== $userId) {
+        $response->errorPage(404, '404');
+        return;
+    }
+
+    $errors = $_SESSION['errors_posts_edit'] ?? [];
+    unset($_SESSION['errors_posts_edit']);
+
+    require dirname(__DIR__, 2) . '/templates/posts/edit.php';
+}
+
+// modification d'un post
+public function update(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    $title = trim((string) $request->input('title', ''));
+    $content = trim((string) $request->input('content', ''));
+    $location = trim((string) $request->input('location', ''));
+    $visibility = (string) $request->input('visibility', 'public');
+
+    $errors = [];
+    if ($postId <= 0) {
+        $errors[] = 'Post invalide.';
+    }
+    if ($content === '' || strlen($content) < 5) {
+        $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
+    }
+    if (!in_array($visibility, ['public', 'friends', 'private'], true)) {
+        $errors[] = 'Visibilite invalide.';
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null || (int) $post['user_id'] !== $userId) {
+        $errors[] = 'Vous ne pouvez modifier que vos posts.';
+    }
+
+    if ($errors !== []) {
+        $_SESSION['errors_posts_edit'] = $errors;
+        $response->redirect('/posts/edit?id=' . $postId);
+        return;
+    }
+
+    $this->posts->updateByOwner($postId, $userId, $title, $content, $location, $visibility);
+    $response->redirect('/posts');
+}
+
+public function delete(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    if ($postId <= 0) {
+        $response->redirect('/posts');
+        return;
+    }
+
+    $this->posts->deleteByOwner($postId, $userId);
+    $response->redirect('/posts');
+}
+
 }

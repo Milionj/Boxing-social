@@ -61,4 +61,55 @@ final class Post
 
         return $stmt->fetchAll() ?: [];
     }
+    public function findById(int $id): ?array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT id, user_id, title, content, image_path, location, visibility, created_at
+         FROM posts
+         WHERE id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $id]);
+    $post = $stmt->fetch();
+
+    return $post ?: null;
+}
+
+// mise a jour d'un post par son proprietaire
+
+public function updateByOwner(
+    int $postId,
+    int $ownerId,
+    string $title,
+    string $content,
+    ?string $location,
+    string $visibility
+): bool {
+    $stmt = $this->pdo->prepare(
+        'UPDATE posts
+         SET title = :title, content = :content, location = :location, visibility = :visibility, updated_at = CURRENT_TIMESTAMP
+         WHERE id = :post_id AND user_id = :owner_id'
+    );
+
+    return $stmt->execute([
+        'title' => $title !== '' ? $title : null,
+        'content' => $content,
+        'location' => $location !== '' ? $location : null,
+        'visibility' => $visibility,
+        'post_id' => $postId,
+        'owner_id' => $ownerId,
+    ]);
+}
+
+public function deleteByOwner(int $postId, int $ownerId): bool
+{
+    $stmt = $this->pdo->prepare(
+        'DELETE FROM posts WHERE id = :post_id AND user_id = :owner_id'
+    );
+
+    return $stmt->execute([
+        'post_id' => $postId,
+        'owner_id' => $ownerId,
+    ]);
+}
 }
