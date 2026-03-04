@@ -137,4 +137,72 @@ final class ProfileController
     $response->redirect('/profile');
 }
 
+// modification de la photo de profil
+    public function updateAvatar(Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    if (!isset($_FILES['avatar']) || !is_array($_FILES['avatar'])) {
+        $_SESSION['errors_avatar'] = ['Aucun fichier recu.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $file = $_FILES['avatar'];
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        $_SESSION['errors_avatar'] = ['Erreur upload fichier.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $maxSize = 2 * 1024 * 1024; // 2MB
+    if (($file['size'] ?? 0) > $maxSize) {
+        $_SESSION['errors_avatar'] = ['Fichier trop volumineux (max 2MB).'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $tmpPath = (string) ($file['tmp_name'] ?? '');
+    $mime = mime_content_type($tmpPath) ?: '';
+
+    $allowedMimes = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    if (!isset($allowedMimes[$mime])) {
+        $_SESSION['errors_avatar'] = ['Format non autorise. Utilise JPG, PNG ou WEBP.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $extension = $allowedMimes[$mime];
+    $newName = 'avatar_' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+
+    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/avatars';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        $_SESSION['errors_avatar'] = ['Impossible de creer le dossier de stockage.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $targetPath = $uploadDir . '/' . $newName;
+    if (!move_uploaded_file($tmpPath, $targetPath)) {
+        $_SESSION['errors_avatar'] = ['Impossible de deplacer le fichier.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $publicPath = '/uploads/avatars/' . $newName;
+    $this->users->updateAvatarPath($userId, $publicPath);
+
+    $_SESSION['success_avatar'] = 'Photo de profil mise a jour.';
+    $response->redirect('/profile');
+}
+
 }

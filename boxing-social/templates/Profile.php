@@ -36,6 +36,36 @@
 <?php unset($_SESSION['errors_password'], $_SESSION['success_password']); ?>
 
 <hr>
+
+<?php $errorsAvatar = $_SESSION['errors_avatar'] ?? []; ?>
+<?php $successAvatar = $_SESSION['success_avatar'] ?? ''; ?>
+<?php unset($_SESSION['errors_avatar'], $_SESSION['success_avatar']); ?>
+
+<hr>
+<h2>Photo de profil</h2>
+
+<?php if (!empty($user['avatar_path'])): ?>
+  <p>
+    <img src="<?= htmlspecialchars((string) $user['avatar_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Avatar" style="max-width:160px;height:auto;">
+  </p>
+<?php endif; ?>
+
+<?php if (!empty($successAvatar)): ?>
+  <p style="color:#067647;"><?= htmlspecialchars($successAvatar, ENT_QUOTES, 'UTF-8') ?></p>
+<?php endif; ?>
+
+<?php if (!empty($errorsAvatar)): ?>
+  <?php foreach ($errorsAvatar as $error): ?>
+    <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+  <?php endforeach; ?>
+<?php endif; ?>
+
+<form method="post" action="/profile/avatar" enctype="multipart/form-data">
+  <input type="file" name="avatar" accept=".jpg,.jpeg,.png,.webp" required>
+  <button type="submit">Mettre a jour la photo</button>
+</form>
+
+<hr>
 <h2>Changer le mot de passe</h2>
 
 <?php if (!empty($successPassword)): ?>
