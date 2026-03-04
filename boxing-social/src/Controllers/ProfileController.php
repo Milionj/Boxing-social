@@ -6,14 +6,17 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\User;
+use App\Services\AuthService;
 
 final class ProfileController
 {
-    private User $users;
+    private User $users;    
+    private AuthService $auth;
 
     public function __construct()
     {
         $this->users = new User();
+        $this->auth = new AuthService();
     }
 
     private function requireAuth(Response $response): ?int
@@ -89,4 +92,117 @@ final class ProfileController
 
         $response->redirect('/profile');
     }
+
+    public function updatePassword(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $currentPassword = (string) $request->input('current_password', '');
+    $newPassword = (string) $request->input('new_password', '');
+    $confirmPassword = (string) $request->input('confirm_password', '');
+
+    $errors = [];
+
+    if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+        $errors[] = 'Tous les champs mot de passe sont obligatoires.';
+    }
+
+    if (strlen($newPassword) < 8) {
+        $errors[] = 'Le nouveau mot de passe doit contenir au moins 8 caracteres.';
+    }
+
+    if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+        $errors[] = 'Le nouveau mot de passe doit contenir une majuscule, une minuscule et un chiffre.';
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        $errors[] = 'La confirmation du nouveau mot de passe ne correspond pas.';
+    }
+
+    if (!$this->auth->verifyCurrentPassword($userId, $currentPassword)) {
+        $errors[] = 'Mot de passe actuel incorrect.';
+    }
+
+    if ($errors !== []) {
+        $_SESSION['errors_password'] = $errors;
+        $response->redirect('/profile');
+        return;
+    }
+
+    $this->auth->updatePassword($userId, $newPassword);
+    $_SESSION['success_password'] = 'Mot de passe mis a jour avec succes.';
+    $response->redirect('/profile');
+}
+
+// modification de la photo de profil
+    public function updateAvatar(Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    if (!isset($_FILES['avatar']) || !is_array($_FILES['avatar'])) {
+        $_SESSION['errors_avatar'] = ['Aucun fichier recu.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $file = $_FILES['avatar'];
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        $_SESSION['errors_avatar'] = ['Erreur upload fichier.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $maxSize = 2 * 1024 * 1024; // 2MB
+    if (($file['size'] ?? 0) > $maxSize) {
+        $_SESSION['errors_avatar'] = ['Fichier trop volumineux (max 2MB).'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $tmpPath = (string) ($file['tmp_name'] ?? '');
+    $mime = mime_content_type($tmpPath) ?: '';
+
+    $allowedMimes = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    if (!isset($allowedMimes[$mime])) {
+        $_SESSION['errors_avatar'] = ['Format non autorise. Utilise JPG, PNG ou WEBP.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $extension = $allowedMimes[$mime];
+    $newName = 'avatar_' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+
+    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/avatars';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        $_SESSION['errors_avatar'] = ['Impossible de creer le dossier de stockage.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $targetPath = $uploadDir . '/' . $newName;
+    if (!move_uploaded_file($tmpPath, $targetPath)) {
+        $_SESSION['errors_avatar'] = ['Impossible de deplacer le fichier.'];
+        $response->redirect('/profile');
+        return;
+    }
+
+    $publicPath = '/uploads/avatars/' . $newName;
+    $this->users->updateAvatarPath($userId, $publicPath);
+
+    $_SESSION['success_avatar'] = 'Photo de profil mise a jour.';
+    $response->redirect('/profile');
+}
+
 }

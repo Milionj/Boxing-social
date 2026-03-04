@@ -31,6 +31,7 @@ use App\Core\Router;
 use App\Database\Database;
 use App\Controllers\AuthController;
 use App\Controllers\ProfileController;
+use App\Controllers\PostController;
 
 session_start();
 
@@ -49,6 +50,16 @@ try {
     $router->post('/profile', fn() => (new ProfileController())->update($request, $response));
 
     $router->post('/logout', fn() => (new AuthController())->logout($response));
+    $router->post('/profile/password', fn() => (new ProfileController())->updatePassword($request, $response));
+
+    $router->post('/profile/avatar', fn() => (new ProfileController())->updateAvatar($response));
+
+    // Posts
+    $router->get('/posts', fn() => (new PostController())->index($response));
+    $router->get('/posts/create', fn() => (new PostController())->createForm($response));
+    $router->post('/posts', fn() => (new PostController())->store($request, $response));
+
+    
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;

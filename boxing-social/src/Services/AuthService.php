@@ -69,6 +69,34 @@ final class AuthService
         return true;
     }
 
+    public function verifyCurrentPassword(int $userId, string $currentPassword): bool
+{
+    $stmt = $this->pdo->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $userId]);
+    $hash = $stmt->fetchColumn();
+
+    if (!$hash) {
+        return false;
+    }
+
+    return password_verify($currentPassword, (string) $hash);
+}
+
+public function updatePassword(int $userId, string $newPassword): bool
+{
+    $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+
+    $stmt = $this->pdo->prepare(
+        'UPDATE users SET password_hash = :hash, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+    );
+
+    return $stmt->execute([
+        'hash' => $newHash,
+        'id' => $userId,
+    ]);
+}
+
+
     public function logout(): void
     {
         $_SESSION = [];

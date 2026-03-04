@@ -18,7 +18,7 @@ final class User
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, username, email, bio, role, created_at FROM users WHERE id = :id LIMIT 1'
+            'SELECT id, username, email, bio, avatar_path, role, created_at FROM users WHERE id = :id LIMIT 1'
         );
         $stmt->execute(['id' => $id]);
         $user = $stmt->fetch();
@@ -56,5 +56,23 @@ final class User
             'b' => $bio,
             'id' => $id,
         ]);
+    }
+
+    public function updateAvatarPath(int $id, string $avatarPath): bool{
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET avatar_path = :avatar, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+        );
+        return $stmt->execute([
+            'avatar' => $avatarPath,
+            'id' => $id,
+        ]);
+    }
+
+    public function getAvatarPathById(int $id): ?string{
+        $stmt = $this->pdo->prepare(
+        'SELECT avatar_path FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $value = $stmt->fetchColumn();
+        return $value !== false ? (string) $value : null;
     }
 }
