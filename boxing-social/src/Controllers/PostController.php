@@ -6,14 +6,20 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Post;
+use App\Models\Comment;
+use App\Models\Notification;
 
 final class PostController
 {
     private Post $posts;
+    private Comment $comments;
+    private Notification $notifications;
 
     public function __construct()
     {
         $this->posts = new Post();
+        $this->comments = new Comment();
+        $this->notifications = new Notification();
     }
 
     private function requireAuth(Response $response): ?int
@@ -29,8 +35,123 @@ final class PostController
     public function index(Response $response): void
     {
         $feed = $this->posts->latestFeed(30);
+        $commentsByPost = [];
+        foreach ($feed as $post) {
+            $postId = (int) $post['id'];
+            $commentsByPost[$postId] = $this->comments->byPostId($postId);
+        }
+
+        $likesCountByPost = [];
+        $likedByCurrentUser = [];
+
+        $currentUserId = $_SESSION['user']['id'] ?? null;
+        foreach ($feed as $post) {
+            $postId = (int) $post['id'];
+            $likesCountByPost[$postId] = $this->posts->likesCountByPostId($postId);
+
+            if (is_int($currentUserId)) {
+                $likedByCurrentUser[$postId] = $this->posts->isLikedByUser($postId, $currentUserId);
+            } else {
+                $likedByCurrentUser[$postId] = false;
+            }
+        }
+
         require dirname(__DIR__, 2) . '/templates/posts/index.php';
+
     }
+    public function toggleLike(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response);
+        if ($userId === null) {
+            return;
+        }
+
+        $postId = (int) $request->input('post_id', 0);
+        if ($postId <= 0) {
+            $response->redirect('/posts');
+            return;
+        }
+
+        $post = $this->posts->findById($postId);
+        if ($post === null) {
+            $_SESSION['errors_likes'] = ['Post introuvable.'];
+            $response->redirect('/posts');
+            return;
+        }
+
+        $wasLiked = $this->posts->isLikedByUser($postId, $userId);
+        $this->posts->toggleLike($postId, $userId);
+
+        // NOTIF: only create notification when a new like is added (not when removed).
+        // NOTIF: never notify if user likes their own post.
+        if (!$wasLiked && (int) $post['user_id'] !== $userId) {
+            $this->notifications->create(
+                (int) $post['user_id'],
+                $userId,
+                'like',
+                $postId,
+                'Votre post a recu un like.'
+            );
+        }
+
+        $response->redirect('/posts');
+    }
+
+    public function addComment(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response);
+        if ($userId === null) {
+            return;
+        }
+
+        $postId = (int) $request->input('post_id', 0);
+        $content = trim((string) $request->input('content', ''));
+
+        if ($postId <= 0 || strlen($content) < 2) {
+            $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caracteres).'];
+            $response->redirect('/posts');
+            return;
+        }
+
+        $post = $this->posts->findById($postId);
+        if ($post === null) {
+            $_SESSION['errors_comments'] = ['Post introuvable.'];
+            $response->redirect('/posts');
+            return;
+        }
+
+        $this->comments->create($postId, $userId, $content);
+
+        // NOTIF: notify post owner when someone else comments.
+        if ((int) $post['user_id'] !== $userId) {
+            $this->notifications->create(
+                (int) $post['user_id'],
+                $userId,
+                'comment',
+                $postId,
+                'Nouveau commentaire sur votre post.'
+            );
+        }
+
+        $_SESSION['success_comments'] = 'Commentaire ajoute.';
+        $response->redirect('/posts');
+    }
+
+public function deleteComment(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $commentId = (int) $request->input('comment_id', 0);
+    if ($commentId > 0) {
+        $this->comments->deleteByOwner($commentId, $userId);
+    }
+
+    $response->redirect('/posts');
+}
+
 
     public function createForm(Response $response): void
     {
@@ -122,4 +243,86 @@ final class PostController
         $_SESSION['success_posts'] = 'Post cree avec succes.';
         $response->redirect('/posts');
     }
+    public function editForm(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    if ($postId <= 0) {
+        $response->errorPage(404, '404');
+        return;
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null || (int) $post['user_id'] !== $userId) {
+        $response->errorPage(404, '404');
+        return;
+    }
+
+    $errors = $_SESSION['errors_posts_edit'] ?? [];
+    unset($_SESSION['errors_posts_edit']);
+
+    require dirname(__DIR__, 2) . '/templates/posts/edit.php';
+}
+
+// modification d'un post
+public function update(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    $title = trim((string) $request->input('title', ''));
+    $content = trim((string) $request->input('content', ''));
+    $location = trim((string) $request->input('location', ''));
+    $visibility = (string) $request->input('visibility', 'public');
+
+    $errors = [];
+    if ($postId <= 0) {
+        $errors[] = 'Post invalide.';
+    }
+    if ($content === '' || strlen($content) < 5) {
+        $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
+    }
+    if (!in_array($visibility, ['public', 'friends', 'private'], true)) {
+        $errors[] = 'Visibilite invalide.';
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null || (int) $post['user_id'] !== $userId) {
+        $errors[] = 'Vous ne pouvez modifier que vos posts.';
+    }
+
+    if ($errors !== []) {
+        $_SESSION['errors_posts_edit'] = $errors;
+        $response->redirect('/posts/edit?id=' . $postId);
+        return;
+    }
+
+    $this->posts->updateByOwner($postId, $userId, $title, $content, $location, $visibility);
+    $response->redirect('/posts');
+}
+
+public function delete(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('id', 0);
+    if ($postId <= 0) {
+        $response->redirect('/posts');
+        return;
+    }
+
+    $this->posts->deleteByOwner($postId, $userId);
+    $response->redirect('/posts');
+}
+
 }

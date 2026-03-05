@@ -32,6 +32,9 @@ use App\Database\Database;
 use App\Controllers\AuthController;
 use App\Controllers\ProfileController;
 use App\Controllers\PostController;
+use App\Controllers\FriendshipController;
+use App\Controllers\NotificationController;
+
 
 session_start();
 
@@ -59,7 +62,26 @@ try {
     $router->get('/posts/create', fn() => (new PostController())->createForm($response));
     $router->post('/posts', fn() => (new PostController())->store($request, $response));
 
-    
+    $router->get('/posts/edit', fn() => (new PostController())->editForm($request, $response));
+    $router->post('/posts/update', fn() => (new PostController())->update($request, $response));
+    $router->post('/posts/delete', fn() => (new PostController())->delete($request, $response));
+
+    // Comments
+    $router->post('/comments', fn() => (new PostController())->addComment($request, $response));
+    $router->post('/comments/delete', fn() => (new PostController())->deleteComment($request, $response));
+
+    $router->post('/likes/toggle', fn() => (new PostController())->toggleLike($request, $response));
+
+    // Friendships
+    $router->get('/friends', fn() => (new FriendshipController())->index($response));
+    $router->post('/friends/send', fn() => (new FriendshipController())->send($request, $response));
+    $router->post('/friends/accept', fn() => (new FriendshipController())->accept($request, $response));
+    $router->post('/friends/decline', fn() => (new FriendshipController())->decline($request, $response));
+
+    // Notifications
+    $router->get('/notifications', fn() => (new NotificationController())->index($response));
+    $router->post('/notifications/read', fn() => (new NotificationController())->markRead($request, $response));
+    $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($response));
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;
