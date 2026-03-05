@@ -6,14 +6,17 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Post;
+use App\Models\Comment;
 
 final class PostController
 {
     private Post $posts;
+    private Comment $comments;
 
     public function __construct()
     {
         $this->posts = new Post();
+        $this->comments = new Comment();
     }
 
     private function requireAuth(Response $response): ?int
@@ -29,8 +32,57 @@ final class PostController
     public function index(Response $response): void
     {
         $feed = $this->posts->latestFeed(30);
+        $commentsByPost = [];
+        foreach ($feed as $post) {
+            $postId = (int) $post['id'];
+            $commentsByPost[$postId] = $this->comments->byPostId($postId);
+        }
+
         require dirname(__DIR__, 2) . '/templates/posts/index.php';
     }
+    public function addComment(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('post_id', 0);
+    $content = trim((string) $request->input('content', ''));
+
+    if ($postId <= 0 || strlen($content) < 2) {
+        $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caracteres).'];
+        $response->redirect('/posts');
+        return;
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null) {
+        $_SESSION['errors_comments'] = ['Post introuvable.'];
+        $response->redirect('/posts');
+        return;
+    }
+
+    $this->comments->create($postId, $userId, $content);
+    $_SESSION['success_comments'] = 'Commentaire ajoute.';
+    $response->redirect('/posts');
+}
+
+public function deleteComment(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $commentId = (int) $request->input('comment_id', 0);
+    if ($commentId > 0) {
+        $this->comments->deleteByOwner($commentId, $userId);
+    }
+
+    $response->redirect('/posts');
+}
+
 
     public function createForm(Response $response): void
     {

@@ -63,6 +63,10 @@ try {
     $router->post('/posts/update', fn() => (new PostController())->update($request, $response));
     $router->post('/posts/delete', fn() => (new PostController())->delete($request, $response));
 
+    // Comments
+    $router->post('/comments', fn() => (new PostController())->addComment($request, $response));
+    $router->post('/comments/delete', fn() => (new PostController())->deleteComment($request, $response));
+
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;
