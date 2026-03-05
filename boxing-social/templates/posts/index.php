@@ -15,7 +15,9 @@
 
   <?php $errorsComments = $_SESSION['errors_comments'] ?? []; ?>
   <?php $successComments = $_SESSION['success_comments'] ?? ''; ?>
+  <?php $errorsLikes = $_SESSION['errors_likes'] ?? []; ?>
   <?php unset($_SESSION['errors_comments'], $_SESSION['success_comments']); ?>
+  <?php unset($_SESSION['errors_likes']); ?>
 
   <?php if (!empty($successComments)): ?>
     <p style="color:#067647;"><?= htmlspecialchars($successComments, ENT_QUOTES, 'UTF-8') ?></p>
@@ -23,6 +25,12 @@
 
   <?php if (!empty($errorsComments)): ?>
     <?php foreach ($errorsComments as $error): ?>
+      <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+  <?php if (!empty($errorsLikes)): ?>
+    <?php foreach ($errorsLikes as $error): ?>
       <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endforeach; ?>
   <?php endif; ?>
@@ -54,6 +62,20 @@
         <?php endif; ?>
 
         <p><small><?= htmlspecialchars((string) $post['created_at'], ENT_QUOTES, 'UTF-8') ?> | <?= htmlspecialchars((string) $post['visibility'], ENT_QUOTES, 'UTF-8') ?></small></p>
+
+        <hr>
+        <?php $postId = (int) $post['id']; ?>
+<?php $likesCount = (int) ($likesCountByPost[$postId] ?? 0); ?>
+<?php $isLiked = (bool) ($likedByCurrentUser[$postId] ?? false); ?>
+
+<p><strong>Likes:</strong> <?= $likesCount ?></p>
+
+<?php if ($currentUserId !== null): ?>
+  <form method="post" action="/likes/toggle">
+    <input type="hidden" name="post_id" value="<?= $postId ?>">
+    <button type="submit"><?= $isLiked ? 'Retirer le like' : 'Liker' ?></button>
+  </form>
+<?php endif; ?>
 
         <hr>
         <h4>Commentaires</h4>

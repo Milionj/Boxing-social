@@ -38,8 +38,48 @@ final class PostController
             $commentsByPost[$postId] = $this->comments->byPostId($postId);
         }
 
+        $likesCountByPost = [];
+        $likedByCurrentUser = [];
+
+        $currentUserId = $_SESSION['user']['id'] ?? null;
+        foreach ($feed as $post) {
+            $postId = (int) $post['id'];
+            $likesCountByPost[$postId] = $this->posts->likesCountByPostId($postId);
+
+            if (is_int($currentUserId)) {
+                $likedByCurrentUser[$postId] = $this->posts->isLikedByUser($postId, $currentUserId);
+            } else {
+                $likedByCurrentUser[$postId] = false;
+            }
+        }
+
         require dirname(__DIR__, 2) . '/templates/posts/index.php';
+
     }
+    public function toggleLike(Request $request, Response $response): void
+{
+    $userId = $this->requireAuth($response);
+    if ($userId === null) {
+        return;
+    }
+
+    $postId = (int) $request->input('post_id', 0);
+    if ($postId <= 0) {
+        $response->redirect('/posts');
+        return;
+    }
+
+    $post = $this->posts->findById($postId);
+    if ($post === null) {
+        $_SESSION['errors_likes'] = ['Post introuvable.'];
+        $response->redirect('/posts');
+        return;
+    }
+
+    $this->posts->toggleLike($postId, $userId);
+    $response->redirect('/posts');
+}
+
     public function addComment(Request $request, Response $response): void
 {
     $userId = $this->requireAuth($response);

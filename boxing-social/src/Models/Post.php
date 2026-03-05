@@ -101,6 +101,60 @@ public function updateByOwner(
     ]);
 }
 
+//like  etc
+
+public function toggleLike(int $postId, int $userId): bool
+{
+    $check = $this->pdo->prepare(
+        'SELECT 1 FROM post_likes WHERE post_id = :post_id AND user_id = :user_id LIMIT 1'
+    );
+    $check->execute([
+        'post_id' => $postId,
+        'user_id' => $userId,
+    ]);
+
+    $alreadyLiked = (bool) $check->fetchColumn();
+
+    if ($alreadyLiked) {
+        $del = $this->pdo->prepare(
+            'DELETE FROM post_likes WHERE post_id = :post_id AND user_id = :user_id'
+        );
+        return $del->execute([
+            'post_id' => $postId,
+            'user_id' => $userId,
+        ]);
+    }
+
+    $ins = $this->pdo->prepare(
+        'INSERT INTO post_likes (post_id, user_id) VALUES (:post_id, :user_id)'
+    );
+    return $ins->execute([
+        'post_id' => $postId,
+        'user_id' => $userId,
+    ]);
+}
+
+public function likesCountByPostId(int $postId): int
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT COUNT(*) FROM post_likes WHERE post_id = :post_id'
+    );
+    $stmt->execute(['post_id' => $postId]);
+    return (int) $stmt->fetchColumn();
+}
+
+public function isLikedByUser(int $postId, int $userId): bool
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT 1 FROM post_likes WHERE post_id = :post_id AND user_id = :user_id LIMIT 1'
+    );
+    $stmt->execute([
+        'post_id' => $postId,
+        'user_id' => $userId,
+    ]);
+    return (bool) $stmt->fetchColumn();
+}
+
 public function deleteByOwner(int $postId, int $ownerId): bool
 {
     $stmt = $this->pdo->prepare(
