@@ -34,6 +34,7 @@ use App\Controllers\ProfileController;
 use App\Controllers\PostController;
 use App\Controllers\FriendshipController;
 use App\Controllers\NotificationController;
+use App\Controllers\MessageController;
 
 
 session_start();
@@ -62,6 +63,7 @@ try {
     $router->get('/posts/create', fn() => (new PostController())->createForm($response));
     $router->post('/posts', fn() => (new PostController())->store($request, $response));
 
+    // Affichage d'un post + ses commentaires
     $router->get('/posts/edit', fn() => (new PostController())->editForm($request, $response));
     $router->post('/posts/update', fn() => (new PostController())->update($request, $response));
     $router->post('/posts/delete', fn() => (new PostController())->delete($request, $response));
@@ -82,6 +84,10 @@ try {
     $router->get('/notifications', fn() => (new NotificationController())->index($response));
     $router->post('/notifications/read', fn() => (new NotificationController())->markRead($request, $response));
     $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($response));
+
+    // Messages privés
+    $router->get('/messages', fn() => (new MessageController())->index($request, $response));
+    $router->post('/messages/send', fn() => (new MessageController())->send($request, $response));
 
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;
