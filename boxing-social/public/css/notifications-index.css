@@ -1,0 +1,5 @@
+body{font-family:Arial,sans-serif;background:#f6f7f9;color:#222;margin:0}
+.page{max-width:900px;margin:24px auto;background:#fff;padding:20px;border:1px solid #ddd}
+.item{border:1px solid #ddd;padding:10px;margin:10px 0}
+.item.unread{background:#fffbe6}
+button{padding:8px;cursor:pointer}

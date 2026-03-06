@@ -1,0 +1,9 @@
+body{font-family:Arial,sans-serif;background:#f6f7f9;color:#222;margin:0}
+.page{max-width:900px;margin:24px auto;background:#fff;padding:20px;border:1px solid #ddd}
+.msg-error{color:#b42318}
+.msg-success{color:#067647}
+form{display:grid;gap:10px;max-width:520px}
+input,textarea,button{padding:10px;font-size:14px}
+button{cursor:pointer}
+.avatar{max-width:160px;height:auto;display:block}
+.row{margin-top:12px}

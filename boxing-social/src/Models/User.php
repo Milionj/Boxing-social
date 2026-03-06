@@ -75,4 +75,32 @@ final class User
         $value = $stmt->fetchColumn();
         return $value !== false ? (string) $value : null;
     }
+
+    public function latestUsers(int $limit = 50): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, username, email, role, is_active, created_at
+             FROM users
+             ORDER BY created_at DESC
+             LIMIT :lim'
+        );
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function setActiveByAdmin(int $userId, bool $isActive): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users
+             SET is_active = :is_active, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id'
+        );
+
+        return $stmt->execute([
+            'is_active' => $isActive ? 1 : 0,
+            'id' => $userId,
+        ]);
+    }
 }

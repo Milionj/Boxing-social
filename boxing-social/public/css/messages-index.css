@@ -1,0 +1,11 @@
+body{font-family:Arial,sans-serif;background:#f6f7f9;color:#222;margin:0}
+.page{max-width:1080px;margin:24px auto;padding:8px}
+.msg-error{color:#b42318}
+.msg-success{color:#067647}
+.wrap{display:flex;gap:24px;align-items:flex-start}
+.col{border:1px solid #ddd;background:#fff;padding:12px;min-height:300px}
+.left{width:280px}
+.right{flex:1}
+.msg{border-bottom:1px solid #eee;padding:8px 0}
+input,textarea,button{padding:8px;font-size:14px}
+button{cursor:pointer}

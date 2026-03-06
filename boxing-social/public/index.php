@@ -35,6 +35,7 @@ use App\Controllers\PostController;
 use App\Controllers\FriendshipController;
 use App\Controllers\NotificationController;
 use App\Controllers\MessageController;
+use App\Controllers\AdminController;
 
 
 session_start();
@@ -89,14 +90,26 @@ try {
     $router->get('/messages', fn() => (new MessageController())->index($request, $response));
     $router->post('/messages/send', fn() => (new MessageController())->send($request, $response));
 
+    // Admin
+    $router->get('/admin', fn() => (new AdminController())->index($response));
+    $router->post('/admin/users/toggle', fn() => (new AdminController())->toggleUser($request, $response));
+    $router->post('/admin/posts/delete', fn() => (new AdminController())->deletePost($request, $response));
+    $router->post('/admin/comments/delete', fn() => (new AdminController())->deleteComment($request, $response));
+
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;
+        $role = $_SESSION['user']['role'] ?? null;
+
         if ($user !== null) {
-            $response->html('<h1>Boxing Social</h1><p>Connecte: ' . htmlspecialchars($user, ENT_QUOTES, 'UTF-8') . '</p>');
+            ob_start();
+            require dirname(__DIR__) . '/templates/home/index.php';
+            $response->html((string) ob_get_clean());
             return;
         }
 
-        $response->html('<h1>Boxing Social</h1><p>Base app OK</p><p><a href="/login">Connexion</a> | <a href="/register">Inscription</a></p>');
+        ob_start();
+        require dirname(__DIR__) . '/templates/home/guest.php';
+        $response->html((string) ob_get_clean());
     });
 
     $router->get('/health', function () use ($response): void {

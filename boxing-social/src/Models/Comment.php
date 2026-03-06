@@ -53,4 +53,26 @@ final class Comment
 
         return $stmt->fetchAll() ?: [];
     }
+
+    public function latestForAdmin(int $limit = 150): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT c.id, c.post_id, c.user_id, c.content, c.created_at, u.username
+             FROM comments c
+             INNER JOIN users u ON u.id = c.user_id
+             ORDER BY c.created_at DESC
+             LIMIT :lim'
+        );
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function deleteByAdmin(int $commentId): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM comments WHERE id = :id');
+
+        return $stmt->execute(['id' => $commentId]);
+    }
 }

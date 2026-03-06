@@ -166,4 +166,26 @@ public function deleteByOwner(int $postId, int $ownerId): bool
         'owner_id' => $ownerId,
     ]);
 }
+
+public function latestForAdmin(int $limit = 100): array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT p.id, p.user_id, p.title, p.content, p.visibility, p.created_at, u.username
+         FROM posts p
+         INNER JOIN users u ON u.id = p.user_id
+         ORDER BY p.created_at DESC
+         LIMIT :lim'
+    );
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
+public function deleteByAdmin(int $postId): bool
+{
+    $stmt = $this->pdo->prepare('DELETE FROM posts WHERE id = :id');
+
+    return $stmt->execute(['id' => $postId]);
+}
 }
