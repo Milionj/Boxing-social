@@ -2,16 +2,16 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Feed Posts</title>
+  <title>Fil des publications</title>
   <link rel="stylesheet" href="/css/posts-index.css">
 </head>
 <body>
   <main class="page">
-    <h1>Derniers posts</h1>
+    <h1>Dernieres publications</h1>
 
     <p>
       <a href="/">Accueil</a> |
-      <a href="/posts/create">Creer un post</a> |
+      <a href="/posts/create">Creer une publication</a> |
       <a href="/profile">Mon profil</a>
     </p>
 
@@ -46,7 +46,7 @@
           <p><?= nl2br(htmlspecialchars((string) $post['content'], ENT_QUOTES, 'UTF-8')) ?></p>
 
           <?php if (!empty($post['image_path'])): ?>
-            <p><img class="post-image" src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image post"></p>
+            <p><img class="post-image" src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image de la publication"></p>
           <?php endif; ?>
 
           <?php if (!empty($post['location'])): ?>
@@ -69,12 +69,12 @@
           <?php $likesCount = (int) ($likesCountByPost[$postId] ?? 0); ?>
           <?php $isLiked = (bool) ($likedByCurrentUser[$postId] ?? false); ?>
 
-          <p><strong>Likes:</strong> <?= $likesCount ?></p>
+          <p><strong>J'aime:</strong> <?= $likesCount ?></p>
 
           <?php if ($currentUserId !== null): ?>
             <form method="post" action="/likes/toggle">
               <input type="hidden" name="post_id" value="<?= $postId ?>">
-              <button type="submit"><?= $isLiked ? 'Retirer le like' : 'Liker' ?></button>
+              <button type="submit"><?= $isLiked ? 'Retirer mon j\'aime' : 'J\'aime' ?></button>
             </form>
           <?php endif; ?>
 

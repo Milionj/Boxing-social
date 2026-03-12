@@ -2,16 +2,16 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Admin</title>
+  <title>Administration</title>
   <link rel="stylesheet" href="/css/admin-index.css">
 </head>
 <body>
   <main class="page">
-    <h1>Dashboard Admin</h1>
+    <h1>Tableau de bord administration</h1>
 
     <p>
       <a href="/">Accueil</a> |
-      <a href="/posts">Posts</a> |
+      <a href="/posts">Publications</a> |
       <a href="/notifications">Notifications</a>
     </p>
 
@@ -53,7 +53,7 @@
     </section>
 
     <section class="card">
-      <h2>Posts</h2>
+      <h2>Publications</h2>
       <table>
         <thead>
           <tr><th>ID</th><th>Auteur</th><th>Titre</th><th>Visibilite</th><th>Action</th></tr>
@@ -81,7 +81,7 @@
       <h2>Commentaires</h2>
       <table>
         <thead>
-          <tr><th>ID</th><th>Post</th><th>Auteur</th><th>Contenu</th><th>Action</th></tr>
+          <tr><th>ID</th><th>Publication</th><th>Auteur</th><th>Contenu</th><th>Action</th></tr>
         </thead>
         <tbody>
           <?php foreach ($comments as $c): ?>
@@ -103,13 +103,13 @@
     </section>
 
     <section class="card">
-      <h2>Journal Admin</h2>
+      <h2>Journal administration</h2>
       <?php if (empty($logs)): ?>
         <p>Aucune action admin.</p>
       <?php else: ?>
         <table>
           <thead>
-            <tr><th>Date</th><th>Admin</th><th>Action</th><th>Cible</th></tr>
+            <tr><th>Date</th><th>Administrateur</th><th>Action</th><th>Cible</th></tr>
           </thead>
           <tbody>
             <?php foreach ($logs as $log): ?>

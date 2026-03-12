@@ -11,7 +11,7 @@
 
     <p>
       <a href="/">Accueil</a> |
-      <a href="/posts">Posts</a> |
+      <a href="/posts">Publications</a> |
       <a href="/profile">Profil</a>
     </p>
 

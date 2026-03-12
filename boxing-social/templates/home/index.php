@@ -12,10 +12,10 @@
       <a href="/profile">Profil</a>
       <a href="/posts/create">Publier</a>
       <a href="/friends">Amis</a>
-      <a href="/messages">Message</a>
+      <a href="/messages">Messages</a>
       <a href="/notifications">Notifications</a>
       <?php if (($role ?? null) === 'admin'): ?>
-        <a href="/admin">Admin</a>
+        <a href="/admin">Administration</a>
       <?php endif; ?>
     </div>
     <div class="right">

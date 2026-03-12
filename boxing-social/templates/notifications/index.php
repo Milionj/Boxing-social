@@ -13,7 +13,7 @@
     <p>
       <a href="/">Accueil</a> |
       <a href="/friends">Amis</a> |
-      <a href="/posts">Posts</a>
+      <a href="/posts">Publications</a>
     </p>
 
     <form method="post" action="/notifications/read-all">
@@ -34,7 +34,7 @@
           </p>
           <p>
             <small>
-              acteur: <?= htmlspecialchars((string) ($n['actor_username'] ?? 'system'), ENT_QUOTES, 'UTF-8') ?>
+              acteur: <?= htmlspecialchars((string) ($n['actor_username'] ?? 'systeme'), ENT_QUOTES, 'UTF-8') ?>
               | <?= htmlspecialchars((string) $n['created_at'], ENT_QUOTES, 'UTF-8') ?>
             </small>
           </p>
