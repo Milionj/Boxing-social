@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Accueil</title>
   <link rel="stylesheet" href="/css/home.css">
+  <script src="/js/search-autocomplete.js" defer></script>
 </head>
 <body>
   <nav class="nav">
@@ -14,6 +15,7 @@
       <a href="/friends">Amis</a>
       <a href="/messages">Messages</a>
       <a href="/notifications">Notifications</a>
+      <a href="/search">Recherche</a>
       <?php if (($role ?? null) === 'admin'): ?>
         <a href="/admin">Administration</a>
       <?php endif; ?>
@@ -28,7 +30,22 @@
 
   <main class="content">
     <h1>Accueil</h1>
-    <p>...</p>
+    <p>Retrouve rapidement une personne, une publication ou un sujet de discussion.</p>
+
+    <form class="home-search" method="get" action="/search" autocomplete="off">
+      <div class="autocomplete">
+        <input
+          type="text"
+          name="q"
+          placeholder="Rechercher un pseudo ou une publication"
+          data-user-autocomplete
+          data-autocomplete-endpoint="/search/usernames"
+          required
+        >
+        <div class="autocomplete-list" hidden></div>
+      </div>
+      <button class="btn" type="submit">Rechercher</button>
+    </form>
   </main>
 </body>
 </html>

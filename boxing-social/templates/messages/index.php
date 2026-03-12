@@ -30,7 +30,7 @@
         <h2>Conversations</h2>
 
         <form method="get" action="/messages">
-          <input type="number" name="user_id" min="1" placeholder="ID utilisateur" required>
+          <input type="text" name="username" placeholder="Pseudo de la personne" required>
           <button type="submit">Ouvrir</button>
         </form>
 
@@ -43,6 +43,8 @@
                 <a href="/messages?user_id=<?= (int) $conv['other_user_id'] ?>">
                   <?= htmlspecialchars((string) $conv['username'], ENT_QUOTES, 'UTF-8') ?>
                 </a>
+                -
+                <a href="/user?username=<?= rawurlencode((string) $conv['username']) ?>">voir le profil</a>
               </li>
             <?php endforeach; ?>
           </ul>
@@ -58,7 +60,7 @@
           <hr>
           <h3>Nouveau message</h3>
           <form method="post" action="/messages/send">
-            <input type="number" name="receiver_id" min="1" placeholder="ID destinataire" required>
+            <input type="text" name="receiver_username" placeholder="Pseudo du destinataire" required>
             <br><br>
             <textarea name="content" rows="3" cols="60" placeholder="Ecrire un premier message..." required></textarea>
             <br>

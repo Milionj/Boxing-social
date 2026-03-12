@@ -42,7 +42,12 @@
       <?php foreach ($feed as $post): ?>
         <article class="post">
           <h3><?= htmlspecialchars((string) ($post['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h3>
-          <p><strong>Auteur:</strong> <?= htmlspecialchars((string) $post['username'], ENT_QUOTES, 'UTF-8') ?></p>
+          <p>
+            <strong>Auteur:</strong>
+            <a href="/user?username=<?= rawurlencode((string) $post['username']) ?>">
+              <?= htmlspecialchars((string) $post['username'], ENT_QUOTES, 'UTF-8') ?>
+            </a>
+          </p>
           <p><?= nl2br(htmlspecialchars((string) $post['content'], ENT_QUOTES, 'UTF-8')) ?></p>
 
           <?php if (!empty($post['image_path'])): ?>

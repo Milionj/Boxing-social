@@ -188,4 +188,21 @@ public function deleteByAdmin(int $postId): bool
 
     return $stmt->execute(['id' => $postId]);
 }
+
+public function latestPublicByUserId(int $userId, int $limit = 12): array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT id, user_id, title, content, image_path, location, visibility, created_at
+         FROM posts
+         WHERE user_id = :user_id AND visibility = :visibility
+         ORDER BY created_at DESC
+         LIMIT :lim'
+    );
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':visibility', 'public', PDO::PARAM_STR);
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
 }

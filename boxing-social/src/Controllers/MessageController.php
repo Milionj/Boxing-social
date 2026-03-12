@@ -7,6 +7,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Models\Message;
 use App\Models\Notification;
+use App\Models\User;
 
 /**
  * MessageController
@@ -30,12 +31,14 @@ final class MessageController
      */
     private Message $messages;
     private Notification $notifications;
+    private User $users;
 
     public function __construct()
     {
         // Instanciation des modèles (accès DB)
         $this->messages = new Message();
         $this->notifications = new Notification();
+        $this->users = new User();
     }
 
     /**
@@ -80,8 +83,14 @@ final class MessageController
         // 2) Liste des conversations (interlocuteurs + date dernier message)
         $conversations = $this->messages->getConversations($userId);
 
-        // 3) Paramètre optionnel : user_id de l'interlocuteur à afficher
+        // On autorise l'ouverture d'une conversation par pseudo pour ne plus exposer l'ID dans le formulaire.
+        $selectedUsername = trim((string) $request->input('username', ''));
         $selectedUserId = (int) $request->input('user_id', 0);
+
+        if ($selectedUserId <= 0 && $selectedUsername !== '') {
+            $selectedUser = $this->users->findByUsername($selectedUsername);
+            $selectedUserId = (int) ($selectedUser['id'] ?? 0);
+        }
 
         // Fil de discussion (vide par défaut)
         $thread = [];
@@ -135,13 +144,19 @@ final class MessageController
 
         // 2) Récupération des inputs
         $receiverId = (int) $request->input('receiver_id', 0);
+        $receiverUsername = trim((string) $request->input('receiver_username', ''));
         $content = trim((string) $request->input('content', ''));
+
+        if ($receiverId <= 0 && $receiverUsername !== '') {
+            $receiver = $this->users->findByUsername($receiverUsername);
+            $receiverId = (int) ($receiver['id'] ?? 0);
+        }
 
         // 3) Validation destinataire
         // - id valide
         // - on ne s'envoie pas de message à soi-même
         if ($receiverId <= 0 || $receiverId === $userId) {
-            $_SESSION['errors_messages'] = ['Destinataire invalide.'];
+            $_SESSION['errors_messages'] = ['Destinataire introuvable ou invalide.'];
             $response->redirect('/messages');
             return;
         }

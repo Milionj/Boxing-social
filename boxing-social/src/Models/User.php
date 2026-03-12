@@ -26,6 +26,36 @@ final class User
         return $user ?: null;
     }
 
+    public function findByUsername(string $username): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, username, email, bio, avatar_path, role, created_at
+             FROM users
+             WHERE username = :username
+             LIMIT 1'
+        );
+        $stmt->execute(['username' => $username]);
+        $user = $stmt->fetch();
+
+        return $user ?: null;
+    }
+
+    public function searchByUsername(string $query, int $limit = 8): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, username, bio
+             FROM users
+             WHERE username LIKE :query
+             ORDER BY username ASC
+             LIMIT :lim'
+        );
+        $stmt->bindValue(':query', $query . '%', PDO::PARAM_STR);
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function existsByUsername(string $username, int $exceptId): bool
     {
         $stmt = $this->pdo->prepare(

@@ -36,6 +36,7 @@ use App\Controllers\FriendshipController;
 use App\Controllers\NotificationController;
 use App\Controllers\MessageController;
 use App\Controllers\AdminController;
+use App\Controllers\SearchController;
 
 
 session_start();
@@ -52,6 +53,7 @@ try {
     $router->post('/login', fn() => (new AuthController())->login($request, $response));
 
     $router->get('/profile', fn() => (new ProfileController())->show($response));
+    $router->get('/user', fn() => (new ProfileController())->publicShow($request, $response));
     $router->post('/profile', fn() => (new ProfileController())->update($request, $response));
 
     $router->post('/logout', fn() => (new AuthController())->logout($response));
@@ -89,6 +91,10 @@ try {
     // Messages privés
     $router->get('/messages', fn() => (new MessageController())->index($request, $response));
     $router->post('/messages/send', fn() => (new MessageController())->send($request, $response));
+
+    // Recherche
+    $router->get('/search', fn() => (new SearchController())->index($request, $response));
+    $router->get('/search/usernames', fn() => (new SearchController())->usernames($request, $response));
 
     // Admin
     $router->get('/admin', fn() => (new AdminController())->index($response));

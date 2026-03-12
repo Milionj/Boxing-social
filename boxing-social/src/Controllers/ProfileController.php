@@ -5,17 +5,20 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Models\Post;
 use App\Models\User;
 use App\Services\AuthService;
 
 final class ProfileController
 {
     private User $users;    
+    private Post $posts;
     private AuthService $auth;
 
     public function __construct()
     {
         $this->users = new User();
+        $this->posts = new Post();
         $this->auth = new AuthService();
     }
 
@@ -48,6 +51,25 @@ final class ProfileController
         unset($_SESSION['errors'], $_SESSION['success']);
 
         require dirname(__DIR__, 2) . '/templates/profile.php';
+    }
+
+    public function publicShow(Request $request, Response $response): void
+    {
+        $username = trim((string) $request->input('username', ''));
+        if ($username === '') {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $user = $this->users->findByUsername($username);
+        if ($user === null) {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $posts = $this->posts->latestPublicByUserId((int) $user['id']);
+
+        require dirname(__DIR__, 2) . '/templates/public-profile.php';
     }
 
     public function update(Request $request, Response $response): void

@@ -34,7 +34,14 @@
           </p>
           <p>
             <small>
-              acteur: <?= htmlspecialchars((string) ($n['actor_username'] ?? 'systeme'), ENT_QUOTES, 'UTF-8') ?>
+              acteur:
+              <?php if (!empty($n['actor_username'])): ?>
+                <a href="/user?username=<?= rawurlencode((string) $n['actor_username']) ?>">
+                  <?= htmlspecialchars((string) $n['actor_username'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              <?php else: ?>
+                systeme
+              <?php endif; ?>
               | <?= htmlspecialchars((string) $n['created_at'], ENT_QUOTES, 'UTF-8') ?>
             </small>
           </p>

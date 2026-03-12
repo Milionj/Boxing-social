@@ -28,7 +28,7 @@
     <hr>
     <h2>Envoyer une demande</h2>
     <form method="post" action="/friends/send">
-      <input type="number" name="user_id" min="1" placeholder="ID utilisateur cible" required>
+      <input type="text" name="username" placeholder="Pseudo de la personne" required>
       <button type="submit">Envoyer</button>
     </form>
 
@@ -39,7 +39,14 @@
     <?php else: ?>
       <?php foreach ($incoming as $req): ?>
         <div class="card">
-          <p><strong><?= htmlspecialchars((string) $req['requester_username'], ENT_QUOTES, 'UTF-8') ?></strong> veut etre ton ami.</p>
+          <p>
+            <strong>
+              <a href="/user?username=<?= rawurlencode((string) $req['requester_username']) ?>">
+                <?= htmlspecialchars((string) $req['requester_username'], ENT_QUOTES, 'UTF-8') ?>
+              </a>
+            </strong>
+            veut etre ton ami.
+          </p>
           <form class="inline" method="post" action="/friends/accept">
             <input type="hidden" name="friendship_id" value="<?= (int) $req['id'] ?>">
             <button type="submit">Accepter</button>
@@ -58,7 +65,12 @@
       <p>Aucune demande envoyee.</p>
     <?php else: ?>
       <?php foreach ($outgoing as $req): ?>
-        <p>En attente: <?= htmlspecialchars((string) $req['addressee_username'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p>
+          En attente:
+          <a href="/user?username=<?= rawurlencode((string) $req['addressee_username']) ?>">
+            <?= htmlspecialchars((string) $req['addressee_username'], ENT_QUOTES, 'UTF-8') ?>
+          </a>
+        </p>
       <?php endforeach; ?>
     <?php endif; ?>
 
@@ -69,7 +81,11 @@
     <?php else: ?>
       <ul>
         <?php foreach ($friends as $friend): ?>
-          <li><?= htmlspecialchars((string) $friend['username'], ENT_QUOTES, 'UTF-8') ?> (ID <?= (int) $friend['id'] ?>)</li>
+          <li>
+            <a href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
+              <?= htmlspecialchars((string) $friend['username'], ENT_QUOTES, 'UTF-8') ?>
+            </a>
+          </li>
         <?php endforeach; ?>
       </ul>
     <?php endif; ?>

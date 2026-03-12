@@ -35,7 +35,11 @@
           <?php foreach ($users as $u): ?>
             <tr>
               <td><?= (int) $u['id'] ?></td>
-              <td><?= htmlspecialchars((string) $u['username'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td>
+                <a href="/user?username=<?= rawurlencode((string) $u['username']) ?>">
+                  <?= htmlspecialchars((string) $u['username'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars((string) $u['email'], ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string) $u['role'], ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= ((int) $u['is_active'] === 1) ? 'actif' : 'desactive' ?></td>
@@ -62,7 +66,11 @@
           <?php foreach ($posts as $p): ?>
             <tr>
               <td><?= (int) $p['id'] ?></td>
-              <td><?= htmlspecialchars((string) $p['username'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td>
+                <a href="/user?username=<?= rawurlencode((string) $p['username']) ?>">
+                  <?= htmlspecialchars((string) $p['username'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars((string) ($p['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string) $p['visibility'], ENT_QUOTES, 'UTF-8') ?></td>
               <td>
@@ -88,7 +96,11 @@
             <tr>
               <td><?= (int) $c['id'] ?></td>
               <td>#<?= (int) $c['post_id'] ?></td>
-              <td><?= htmlspecialchars((string) $c['username'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td>
+                <a href="/user?username=<?= rawurlencode((string) $c['username']) ?>">
+                  <?= htmlspecialchars((string) $c['username'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars((string) $c['content'], ENT_QUOTES, 'UTF-8') ?></td>
               <td>
                 <form method="post" action="/admin/comments/delete" onsubmit="return confirm('Supprimer ce commentaire ?');">
@@ -115,7 +127,11 @@
             <?php foreach ($logs as $log): ?>
               <tr>
                 <td><?= htmlspecialchars((string) $log['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars((string) $log['admin_username'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td>
+                  <a href="/user?username=<?= rawurlencode((string) $log['admin_username']) ?>">
+                    <?= htmlspecialchars((string) $log['admin_username'], ENT_QUOTES, 'UTF-8') ?>
+                  </a>
+                </td>
                 <td><?= htmlspecialchars((string) $log['action'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) $log['target_type'], ENT_QUOTES, 'UTF-8') ?> #<?= (int) ($log['target_id'] ?? 0) ?></td>
               </tr>
