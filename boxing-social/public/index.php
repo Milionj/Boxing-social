@@ -37,6 +37,7 @@ use App\Controllers\NotificationController;
 use App\Controllers\MessageController;
 use App\Controllers\AdminController;
 use App\Controllers\SearchController;
+use App\Models\Notification;
 
 
 session_start();
@@ -62,7 +63,8 @@ try {
     $router->post('/profile/avatar', fn() => (new ProfileController())->updateAvatar($response));
 
     // Posts
-    $router->get('/posts', fn() => (new PostController())->index($response));
+    $router->get('/posts', fn() => (new PostController())->index($request, $response));
+    $router->get('/post', fn() => (new PostController())->show($request, $response));
     $router->get('/posts/create', fn() => (new PostController())->createForm($response));
     $router->post('/posts', fn() => (new PostController())->store($request, $response));
 
@@ -105,8 +107,14 @@ try {
     $router->get('/', function () use ($response): void {
         $user = $_SESSION['user']['username'] ?? null;
         $role = $_SESSION['user']['role'] ?? null;
+        $unreadNotifications = 0;
 
         if ($user !== null) {
+            $userId = $_SESSION['user']['id'] ?? null;
+            if (is_int($userId)) {
+                $unreadNotifications = (new Notification())->unreadCount($userId);
+            }
+
             ob_start();
             require dirname(__DIR__) . '/templates/home/index.php';
             $response->html((string) ob_get_clean());
@@ -115,6 +123,24 @@ try {
 
         ob_start();
         require dirname(__DIR__) . '/templates/home/guest.php';
+        $response->html((string) ob_get_clean());
+    });
+
+    $router->get('/contact', function () use ($response): void {
+        ob_start();
+        require dirname(__DIR__) . '/templates/contact.php';
+        $response->html((string) ob_get_clean());
+    });
+
+    $router->get('/privacy', function () use ($response): void {
+        ob_start();
+        require dirname(__DIR__) . '/templates/privacy.php';
+        $response->html((string) ob_get_clean());
+    });
+
+    $router->get('/settings', function () use ($response): void {
+        ob_start();
+        require dirname(__DIR__) . '/templates/settings.php';
         $response->html((string) ob_get_clean());
     });
 

@@ -98,7 +98,7 @@
                   <?php if (!empty($post['image_path'])): ?>
                     <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image de publication">
                   <?php endif; ?>
-                  <a class="btn-link" href="/posts">Voir le fil</a>
+                  <a class="btn-link" href="/post?id=<?= (int) $post['id'] ?>">Voir la publication</a>
                 </article>
               <?php endforeach; ?>
             </div>

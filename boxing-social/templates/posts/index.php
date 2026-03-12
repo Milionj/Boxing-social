@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>Fil des publications</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/posts-index.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Dernieres publications</h1>
-
-    <p>
-      <a href="/">Accueil</a> |
-      <a href="/posts/create">Creer une publication</a> |
-      <a href="/profile">Mon profil</a>
-    </p>
 
     <?php $errorsComments = $_SESSION['errors_comments'] ?? []; ?>
     <?php $successComments = $_SESSION['success_comments'] ?? ''; ?>
@@ -79,6 +75,7 @@
           <?php if ($currentUserId !== null): ?>
             <form method="post" action="/likes/toggle">
               <input type="hidden" name="post_id" value="<?= $postId ?>">
+              <input type="hidden" name="redirect_to" value="/posts?page=<?= (int) $currentPage ?>">
               <button type="submit"><?= $isLiked ? 'Retirer mon j\'aime' : 'J\'aime' ?></button>
             </form>
           <?php endif; ?>
@@ -101,6 +98,7 @@
                 <?php if ($currentUserId !== null && (int) $currentUserId === (int) $comment['user_id']): ?>
                   <form class="form-inline" method="post" action="/comments/delete">
                     <input type="hidden" name="comment_id" value="<?= (int) $comment['id'] ?>">
+                    <input type="hidden" name="redirect_to" value="/posts?page=<?= (int) $currentPage ?>">
                     <button type="submit">Supprimer commentaire</button>
                   </form>
                 <?php endif; ?>
@@ -111,14 +109,32 @@
           <?php if ($currentUserId !== null): ?>
             <form method="post" action="/comments">
               <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
+              <input type="hidden" name="redirect_to" value="/posts?page=<?= (int) $currentPage ?>">
               <textarea name="content" rows="2" cols="50" placeholder="Ajouter un commentaire..." required></textarea>
               <br>
               <button type="submit">Commenter</button>
             </form>
           <?php endif; ?>
+
+          <p><a href="/post?id=<?= (int) $post['id'] ?>">Voir la publication</a></p>
         </article>
       <?php endforeach; ?>
     <?php endif; ?>
+
+    <?php if ($totalPages > 1): ?>
+      <nav class="pagination">
+        <?php if ($currentPage > 1): ?>
+          <a href="/posts?page=<?= $currentPage - 1 ?>">Page precedente</a>
+        <?php endif; ?>
+
+        <span>Page <?= $currentPage ?> / <?= $totalPages ?></span>
+
+        <?php if ($currentPage < $totalPages): ?>
+          <a href="/posts?page=<?= $currentPage + 1 ?>">Page suivante</a>
+        <?php endif; ?>
+      </nav>
+    <?php endif; ?>
   </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

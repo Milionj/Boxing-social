@@ -1,5 +1,4 @@
-body{font-family:Arial,sans-serif;background:#f6f7f9;color:#222;margin:0}
-.page{max-width:900px;margin:24px auto;background:#fff;padding:20px;border:1px solid #ddd}
+.page{max-width:900px;margin:24px auto;background:#fff;color:#222;padding:20px;border:1px solid #ddd}
 .msg-error{color:#b42318}
 .msg-success{color:#067647}
 .card{border:1px solid #ddd;padding:8px;margin:8px 0;background:#fafafa}

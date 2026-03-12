@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>Administration</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/admin-index.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Tableau de bord administration</h1>
-
-    <p>
-      <a href="/">Accueil</a> |
-      <a href="/posts">Publications</a> |
-      <a href="/notifications">Notifications</a>
-    </p>
 
     <?php if (!empty($success)): ?>
       <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
@@ -142,5 +138,6 @@
       <p class="muted">Historique des actions sensibles pour audit.</p>
     </section>
   </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

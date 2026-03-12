@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>Modifier post</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/posts-edit.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Modifier post</h1>
-
-    <p><a href="/posts">Retour feed</a></p>
 
     <?php if (!empty($errors)): ?>
       <?php foreach ($errors as $error): ?>
@@ -32,5 +32,6 @@
       <button type="submit">Enregistrer</button>
     </form>
   </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

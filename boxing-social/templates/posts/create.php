@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>Creer un post</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/posts-create.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Creer un post</h1>
-
-    <p>
-      <a href="/posts">Retour feed</a> |
-      <a href="/profile">Mon profil</a>
-    </p>
-
     <?php if (!empty($success)): ?>
       <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
@@ -39,5 +35,6 @@
       <button type="submit">Publier</button>
     </form>
   </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

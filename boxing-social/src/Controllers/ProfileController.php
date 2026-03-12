@@ -67,7 +67,14 @@ final class ProfileController
             return;
         }
 
-        $posts = $this->posts->latestPublicByUserId((int) $user['id']);
+        $perPage = 6;
+        $currentPage = max(1, (int) $request->input('page', 1));
+        $totalPosts = $this->posts->publicCountByUserId((int) $user['id']);
+        $totalPages = max(1, (int) ceil($totalPosts / $perPage));
+        $currentPage = min($currentPage, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+
+        $posts = $this->posts->latestPublicByUserId((int) $user['id'], $perPage, $offset);
 
         require dirname(__DIR__, 2) . '/templates/public-profile.php';
     }

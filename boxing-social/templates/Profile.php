@@ -3,10 +3,12 @@
 <head>
   <meta charset="utf-8">
   <title>Profil</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/profile.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__) . '/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Mon profil</h1>
 
     <?php if (!empty($success)): ?>
@@ -84,8 +86,7 @@
       <input type="password" name="confirm_password" placeholder="Confirmer le nouveau mot de passe" required>
       <button type="submit">Mettre a jour le mot de passe</button>
     </form>
-
-    <p class="row"><a href="/">Accueil</a></p>
   </main>
+  <?php require dirname(__DIR__) . '/partials/app-footer.php'; ?>
 </body>
 </html>

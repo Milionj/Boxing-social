@@ -31,6 +31,7 @@
             <strong><?= htmlspecialchars((string) $n['type'], ENT_QUOTES, 'UTF-8') ?></strong>
             -
             <?= htmlspecialchars((string) ($n['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+            <a href="<?= htmlspecialchars((string) $n['target_url'], ENT_QUOTES, 'UTF-8') ?>">Ouvrir</a>
           </p>
           <p>
             <small>

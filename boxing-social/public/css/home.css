@@ -1,45 +1,3 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #22272d;
-  color: #f4f4f4;
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: linear-gradient(90deg, #252a2f, #2f343b);
-}
-
-.brand {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.links {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.links a {
-  color: #d6d6d6;
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.links a:hover {
-  color: #fff;
-}
-
-.right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .btn {
   background: #0f1114;
   color: #fff;
@@ -53,7 +11,9 @@ body {
 }
 
 .content {
-  padding: 28px 24px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
 }
 
 .home-search {

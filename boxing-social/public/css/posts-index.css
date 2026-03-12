@@ -1,10 +1,11 @@
-body{font-family:Arial,sans-serif;background:#f6f7f9;color:#222;margin:0}
-.page{max-width:980px;margin:24px auto;padding:12px}
+.page{max-width:980px;margin:24px auto;padding:12px;color:#222}
 .msg-error{color:#b42318}
 .msg-success{color:#067647}
 .post{border:1px solid #ddd;background:#fff;padding:12px;margin:12px 0}
 .post-image{width:100%;max-width:720px;height:auto;display:block}
 .comment{padding:8px;border:1px solid #eee;margin-bottom:8px;background:#fafafa}
 .form-inline{margin-top:6px}
+.pagination{display:flex;gap:16px;align-items:center;justify-content:center;margin:24px 0}
+.pagination a{color:#1d4ed8;text-decoration:none}
 textarea,input,select,button{font-size:14px}
 button{cursor:pointer}

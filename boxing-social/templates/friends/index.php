@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>Amis</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/friends-index.css">
 </head>
-<body>
-  <main class="page">
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <h1>Gestion des amis</h1>
-
-    <p>
-      <a href="/">Accueil</a> |
-      <a href="/posts">Publications</a> |
-      <a href="/profile">Profil</a>
-    </p>
 
     <?php if (!empty($success)): ?>
       <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
@@ -90,5 +86,6 @@
       </ul>
     <?php endif; ?>
   </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

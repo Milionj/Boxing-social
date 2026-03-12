@@ -38,7 +38,7 @@ final class Post
         ]);
     }
 
-    public function latestFeed(int $limit = 20): array
+    public function latestFeed(int $limit = 20, int $offset = 0): array
     {
         $stmt = $this->pdo->prepare(
             'SELECT
@@ -54,12 +54,19 @@ final class Post
              FROM posts p
              INNER JOIN users u ON u.id = p.user_id
              ORDER BY p.created_at DESC
-             LIMIT :lim'
+             LIMIT :lim OFFSET :off'
         );
         $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    public function feedCount(): int
+    {
+        $stmt = $this->pdo->query('SELECT COUNT(*) FROM posts');
+        return (int) $stmt->fetchColumn();
     }
     public function findById(int $id): ?array
 {
@@ -67,6 +74,30 @@ final class Post
         'SELECT id, user_id, title, content, image_path, location, visibility, created_at
          FROM posts
          WHERE id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $id]);
+    $post = $stmt->fetch();
+
+    return $post ?: null;
+}
+
+public function findDetailedById(int $id): ?array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT
+            p.id,
+            p.user_id,
+            p.title,
+            p.content,
+            p.image_path,
+            p.location,
+            p.visibility,
+            p.created_at,
+            u.username
+         FROM posts p
+         INNER JOIN users u ON u.id = p.user_id
+         WHERE p.id = :id
          LIMIT 1'
     );
     $stmt->execute(['id' => $id]);
@@ -189,20 +220,36 @@ public function deleteByAdmin(int $postId): bool
     return $stmt->execute(['id' => $postId]);
 }
 
-public function latestPublicByUserId(int $userId, int $limit = 12): array
+public function latestPublicByUserId(int $userId, int $limit = 12, int $offset = 0): array
 {
     $stmt = $this->pdo->prepare(
         'SELECT id, user_id, title, content, image_path, location, visibility, created_at
          FROM posts
          WHERE user_id = :user_id AND visibility = :visibility
          ORDER BY created_at DESC
-         LIMIT :lim'
+         LIMIT :lim OFFSET :off'
     );
     $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
     $stmt->bindValue(':visibility', 'public', PDO::PARAM_STR);
     $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll() ?: [];
+}
+
+public function publicCountByUserId(int $userId): int
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT COUNT(*)
+         FROM posts
+         WHERE user_id = :user_id AND visibility = :visibility'
+    );
+    $stmt->execute([
+        'user_id' => $userId,
+        'visibility' => 'public',
+    ]);
+
+    return (int) $stmt->fetchColumn();
 }
 }

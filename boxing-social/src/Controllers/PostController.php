@@ -32,9 +32,27 @@ final class PostController
         return $id;
     }
 
-    public function index(Response $response): void
+    private function redirectBack(Request $request, Response $response, string $fallback): void
     {
-        $feed = $this->posts->latestFeed(30);
+        $redirectTo = (string) $request->input('redirect_to', '');
+        if ($redirectTo !== '' && str_starts_with($redirectTo, '/')) {
+            $response->redirect($redirectTo);
+            return;
+        }
+
+        $response->redirect($fallback);
+    }
+
+    public function index(Request $request, Response $response): void
+    {
+        $perPage = 8;
+        $currentPage = max(1, (int) $request->input('page', 1));
+        $totalPosts = $this->posts->feedCount();
+        $totalPages = max(1, (int) ceil($totalPosts / $perPage));
+        $currentPage = min($currentPage, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+
+        $feed = $this->posts->latestFeed($perPage, $offset);
         $commentsByPost = [];
         foreach ($feed as $post) {
             $postId = (int) $post['id'];
@@ -59,6 +77,35 @@ final class PostController
         require dirname(__DIR__, 2) . '/templates/posts/index.php';
 
     }
+
+    public function show(Request $request, Response $response): void
+    {
+        $postId = (int) $request->input('id', 0);
+        if ($postId <= 0) {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $post = $this->posts->findDetailedById($postId);
+        if ($post === null) {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $comments = $this->comments->byPostId($postId);
+        $likesCount = $this->posts->likesCountByPostId($postId);
+
+        $currentUserId = $_SESSION['user']['id'] ?? null;
+        $isLiked = is_int($currentUserId) ? $this->posts->isLikedByUser($postId, $currentUserId) : false;
+
+        $errorsComments = $_SESSION['errors_comments'] ?? [];
+        $successComments = $_SESSION['success_comments'] ?? '';
+        $errorsLikes = $_SESSION['errors_likes'] ?? [];
+        unset($_SESSION['errors_comments'], $_SESSION['success_comments'], $_SESSION['errors_likes']);
+
+        require dirname(__DIR__, 2) . '/templates/posts/show.php';
+    }
+
     public function toggleLike(Request $request, Response $response): void
     {
         $userId = $this->requireAuth($response);
@@ -68,14 +115,14 @@ final class PostController
 
         $postId = (int) $request->input('post_id', 0);
         if ($postId <= 0) {
-            $response->redirect('/posts');
+            $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         $post = $this->posts->findById($postId);
         if ($post === null) {
             $_SESSION['errors_likes'] = ['Post introuvable.'];
-            $response->redirect('/posts');
+            $this->redirectBack($request, $response, '/posts');
             return;
         }
 
@@ -94,7 +141,7 @@ final class PostController
             );
         }
 
-        $response->redirect('/posts');
+        $this->redirectBack($request, $response, '/posts');
     }
 
     public function addComment(Request $request, Response $response): void
@@ -109,14 +156,14 @@ final class PostController
 
         if ($postId <= 0 || strlen($content) < 2) {
             $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caracteres).'];
-            $response->redirect('/posts');
+            $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         $post = $this->posts->findById($postId);
         if ($post === null) {
             $_SESSION['errors_comments'] = ['Post introuvable.'];
-            $response->redirect('/posts');
+            $this->redirectBack($request, $response, '/posts');
             return;
         }
 
@@ -134,7 +181,7 @@ final class PostController
         }
 
         $_SESSION['success_comments'] = 'Commentaire ajoute.';
-        $response->redirect('/posts');
+        $this->redirectBack($request, $response, '/posts');
     }
 
 public function deleteComment(Request $request, Response $response): void
@@ -149,7 +196,7 @@ public function deleteComment(Request $request, Response $response): void
         $this->comments->deleteByOwner($commentId, $userId);
     }
 
-    $response->redirect('/posts');
+    $this->redirectBack($request, $response, '/posts');
 }
 
 

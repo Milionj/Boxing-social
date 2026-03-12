@@ -1,0 +1,121 @@
+body.app-shell {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, #20242a 0%, #2b3036 52%, #1f2329 100%);
+  color: #f3efe8;
+}
+
+.app-shell {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(214, 199, 160, 0.12);
+  background: rgba(20, 23, 28, 0.88);
+}
+
+.app-nav a {
+  color: #ddd4c5;
+  text-decoration: none;
+}
+
+.app-nav__brand a,
+.app-footer__brand a {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.app-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-nav__notif {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-nav__badge {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #b83d2f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.app-nav__user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-nav__logout {
+  margin: 0;
+}
+
+.app-nav__logout button {
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  padding: 10px 14px;
+  background: #0e1013;
+  color: #f5efe5;
+  cursor: pointer;
+}
+
+.app-main {
+  min-height: calc(100vh - 170px);
+}
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-top: 1px solid rgba(214, 199, 160, 0.12);
+  background: rgba(20, 23, 28, 0.88);
+}
+
+.app-footer p {
+  margin: 0;
+  color: #d0c3af;
+}
+
+.app-footer__links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-footer__links a {
+  color: #ddd4c5;
+  text-decoration: none;
+}
+
+@media (max-width: 860px) {
+  .app-nav,
+  .app-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .app-nav__user {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

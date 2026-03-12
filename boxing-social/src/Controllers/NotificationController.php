@@ -66,12 +66,37 @@ final class NotificationController
 
         // Liste des notifications (80 max ici, choix MVP)
         $items = $this->notifications->latestForUser($userId, 80);
+        foreach ($items as &$item) {
+            $item['target_url'] = $this->resolveTargetUrl($item);
+        }
+        unset($item);
 
         // Compteur des notifications non lues (utile pour badge/navbar)
         $unreadCount = $this->notifications->unreadCount($userId);
 
         // Affiche le template
         require dirname(__DIR__, 2) . '/templates/notifications/index.php';
+    }
+
+    private function resolveTargetUrl(array $notification): string
+    {
+        $type = (string) ($notification['type'] ?? '');
+        $entityId = (int) ($notification['entity_id'] ?? 0);
+        $actorUsername = (string) ($notification['actor_username'] ?? '');
+
+        if (($type === 'like' || $type === 'comment') && $entityId > 0) {
+            return '/post?id=' . $entityId;
+        }
+
+        if ($type === 'message') {
+            return $actorUsername !== '' ? '/messages?username=' . rawurlencode($actorUsername) : '/messages';
+        }
+
+        if ($type === 'friend_request' || $type === 'friend_accept') {
+            return $actorUsername !== '' ? '/user?username=' . rawurlencode($actorUsername) : '/friends';
+        }
+
+        return '/notifications';
     }
 
     /**

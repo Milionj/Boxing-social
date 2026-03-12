@@ -3,16 +3,12 @@
 <head>
   <meta charset="utf-8">
   <title>Profil public</title>
+  <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/public-profile.css">
 </head>
-<body>
-  <main class="page">
-    <nav class="top-links">
-      <a href="/">Accueil</a>
-      <a href="/search">Recherche</a>
-      <a href="/posts">Publications</a>
-    </nav>
-
+<body class="app-shell">
+  <?php require dirname(__DIR__) . '/partials/app-navbar.php'; ?>
+  <main class="page app-main">
     <section class="hero">
       <div class="identity">
         <?php if (!empty($user['avatar_path'])): ?>
@@ -57,7 +53,11 @@
         <div class="posts">
           <?php foreach ($posts as $post): ?>
             <article class="post-card">
-              <h3><?= htmlspecialchars((string) ($post['title'] ?: 'Publication sans titre'), ENT_QUOTES, 'UTF-8') ?></h3>
+              <h3>
+                <a href="/post?id=<?= (int) $post['id'] ?>">
+                  <?= htmlspecialchars((string) ($post['title'] ?: 'Publication sans titre'), ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              </h3>
               <p><?= nl2br(htmlspecialchars((string) $post['content'], ENT_QUOTES, 'UTF-8')) ?></p>
               <?php if (!empty($post['image_path'])): ?>
                 <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image de publication">
@@ -70,7 +70,22 @@
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+
+      <?php if ($totalPages > 1): ?>
+        <nav class="pagination">
+          <?php if ($currentPage > 1): ?>
+            <a href="/user?username=<?= rawurlencode((string) $user['username']) ?>&page=<?= $currentPage - 1 ?>">Page precedente</a>
+          <?php endif; ?>
+
+          <span>Page <?= $currentPage ?> / <?= $totalPages ?></span>
+
+          <?php if ($currentPage < $totalPages): ?>
+            <a href="/user?username=<?= rawurlencode((string) $user['username']) ?>&page=<?= $currentPage + 1 ?>">Page suivante</a>
+          <?php endif; ?>
+        </nav>
+      <?php endif; ?>
     </section>
   </main>
+  <?php require dirname(__DIR__) . '/partials/app-footer.php'; ?>
 </body>
 </html>

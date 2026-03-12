@@ -1,29 +1,7 @@
-body {
-  margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(186, 60, 44, 0.2), transparent 24%),
-    linear-gradient(180deg, #171b20 0%, #242a31 100%);
-  color: #f5efe5;
-  font-family: Georgia, "Times New Roman", serif;
-}
-
 .page {
   max-width: 1100px;
   margin: 0 auto;
   padding: 28px 18px 60px;
-}
-
-.top-links {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-
-.top-links a {
-  color: #d8c59e;
-  text-decoration: none;
 }
 
 .hero,
@@ -104,6 +82,19 @@ body {
 .posts {
   display: grid;
   gap: 16px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.pagination a {
+  color: #d8c59e;
+  text-decoration: none;
 }
 
 .post-card {

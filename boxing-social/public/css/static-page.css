@@ -1,0 +1,122 @@
+.static-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 18px 56px;
+}
+
+.static-hero,
+.static-card {
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  background: rgba(20, 23, 28, 0.88);
+}
+
+.static-hero {
+  margin-bottom: 20px;
+  padding: 24px;
+}
+
+.static-eyebrow {
+  margin: 0 0 10px;
+  color: #d2b98c;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.static-hero h1 {
+  margin: 0 0 12px;
+}
+
+.static-hero p,
+.static-card p,
+.static-card h2,
+.setting-row span,
+.contact-form label {
+  color: #f3efe8;
+}
+
+.static-card {
+  padding: 24px;
+}
+
+.contact-form {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+}
+
+.contact-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea,
+.contact-form button {
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  padding: 12px;
+  background: #2b3036;
+  color: #f3efe8;
+}
+
+.contact-form button {
+  width: max-content;
+  background: #0e1013;
+}
+
+.static-note {
+  margin-top: 14px;
+  color: #d0c3af;
+}
+
+.legal-copy {
+  line-height: 1.7;
+}
+
+.legal-copy h2 {
+  margin-top: 0;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+}
+
+.settings-menu {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-menu button {
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  padding: 12px;
+  background: #0e1013;
+  color: #f3efe8;
+  text-align: left;
+}
+
+.settings-menu .is-active {
+  background: #050607;
+}
+
+.settings-list {
+  display: grid;
+  gap: 14px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(214, 199, 160, 0.12);
+}
+
+@media (max-width: 760px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
