@@ -29,6 +29,14 @@ if (is_int($_SESSION['user']['id'] ?? null)) {
     <?php if ($navRole === 'admin'): ?>
       <a href="/admin">Administration</a>
     <?php endif; ?>
+    <details class="app-nav__menu">
+      <summary>Plus</summary>
+      <div class="app-nav__dropdown">
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Confidentialite</a>
+        <a href="/settings">Parametres</a>
+      </div>
+    </details>
   </div>
 
   <div class="app-nav__user">

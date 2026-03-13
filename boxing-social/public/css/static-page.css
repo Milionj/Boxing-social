@@ -70,6 +70,14 @@
   color: #d0c3af;
 }
 
+.msg-success {
+  color: #89d4a1;
+}
+
+.msg-error {
+  color: #ff9d93;
+}
+
 .legal-copy {
   line-height: 1.7;
 }
@@ -113,6 +121,26 @@
   gap: 16px;
   padding: 14px 0;
   border-bottom: 1px solid rgba(214, 199, 160, 0.12);
+}
+
+.setting-row select {
+  min-width: 180px;
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  padding: 10px 12px;
+  background: #2b3036;
+  color: #f3efe8;
+}
+
+.settings-actions {
+  padding-top: 14px;
+}
+
+.settings-actions button {
+  border: 1px solid rgba(214, 199, 160, 0.16);
+  padding: 12px 16px;
+  background: #0e1013;
+  color: #f3efe8;
+  cursor: pointer;
 }
 
 @media (max-width: 760px) {

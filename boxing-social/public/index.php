@@ -37,6 +37,8 @@ use App\Controllers\NotificationController;
 use App\Controllers\MessageController;
 use App\Controllers\AdminController;
 use App\Controllers\SearchController;
+use App\Controllers\ContactController;
+use App\Controllers\SettingsController;
 use App\Models\Notification;
 
 
@@ -126,11 +128,8 @@ try {
         $response->html((string) ob_get_clean());
     });
 
-    $router->get('/contact', function () use ($response): void {
-        ob_start();
-        require dirname(__DIR__) . '/templates/contact.php';
-        $response->html((string) ob_get_clean());
-    });
+    $router->get('/contact', fn() => (new ContactController())->show($response));
+    $router->post('/contact', fn() => (new ContactController())->submit($request, $response));
 
     $router->get('/privacy', function () use ($response): void {
         ob_start();
@@ -138,11 +137,8 @@ try {
         $response->html((string) ob_get_clean());
     });
 
-    $router->get('/settings', function () use ($response): void {
-        ob_start();
-        require dirname(__DIR__) . '/templates/settings.php';
-        $response->html((string) ob_get_clean());
-    });
+    $router->get('/settings', fn() => (new SettingsController())->show($response));
+    $router->post('/settings', fn() => (new SettingsController())->update($request, $response));
 
     $router->get('/health', function () use ($response): void {
         $pdo = Database::getConnection();
