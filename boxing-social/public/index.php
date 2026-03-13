@@ -69,6 +69,7 @@ try {
     $router->get('/post', fn() => (new PostController())->show($request, $response));
     $router->get('/posts/create', fn() => (new PostController())->createForm($response));
     $router->post('/posts', fn() => (new PostController())->store($request, $response));
+    $router->post('/posts/interest', fn() => (new PostController())->expressInterest($request, $response));
 
     // Affichage d'un post + ses commentaires
     $router->get('/posts/edit', fn() => (new PostController())->editForm($request, $response));

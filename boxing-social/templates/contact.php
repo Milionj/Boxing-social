@@ -1,8 +1,9 @@
+<?php require dirname(__DIR__) . '/templates/partials/app-locale.php'; ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
-  <title>Contact</title>
+  <title><?= htmlspecialchars($t->text('contact_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/static-page.css">
   <script>
@@ -22,9 +23,9 @@
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
   <main class="static-page app-main">
     <section class="static-hero">
-      <p class="static-eyebrow">Contact</p>
-      <h1>Entrer en contact avec Boxing Social</h1>
-      <p>Une question sur la communaute, un signalement ou un besoin d aide sur le reseau social. Utilise ce formulaire pour nous ecrire.</p>
+      <p class="static-eyebrow"><?= htmlspecialchars($t->text('contact_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
+      <h1><?= htmlspecialchars($t->text('contact_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+      <p><?= htmlspecialchars($t->text('contact_intro'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
 
     <section class="static-card">
@@ -33,25 +34,25 @@
 
       <form class="contact-form" method="post" action="/contact" data-contact-form>
         <label>
-          Email
+          <?= htmlspecialchars($t->text('contact_email'), ENT_QUOTES, 'UTF-8') ?>
           <input type="email" name="email" placeholder="ton@email.com" value="<?= htmlspecialchars((string) ($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
         </label>
 
         <label>
-          Sujet
+          <?= htmlspecialchars($t->text('contact_subject'), ENT_QUOTES, 'UTF-8') ?>
           <select name="subject" required>
-            <option value="question_generale" <?= (($old['subject'] ?? '') === 'question_generale') ? 'selected' : '' ?>>Question generale</option>
-            <option value="support_technique" <?= (($old['subject'] ?? '') === 'support_technique') ? 'selected' : '' ?>>Support technique</option>
-            <option value="signalement" <?= (($old['subject'] ?? '') === 'signalement') ? 'selected' : '' ?>>Signalement</option>
+            <option value="question_generale" <?= (($old['subject'] ?? '') === 'question_generale') ? 'selected' : '' ?>><?= htmlspecialchars($t->text('contact_subject_general'), ENT_QUOTES, 'UTF-8') ?></option>
+            <option value="support_technique" <?= (($old['subject'] ?? '') === 'support_technique') ? 'selected' : '' ?>><?= htmlspecialchars($t->text('contact_subject_support'), ENT_QUOTES, 'UTF-8') ?></option>
+            <option value="signalement" <?= (($old['subject'] ?? '') === 'signalement') ? 'selected' : '' ?>><?= htmlspecialchars($t->text('contact_subject_report'), ENT_QUOTES, 'UTF-8') ?></option>
           </select>
         </label>
 
         <label>
-          Message
-          <textarea name="message" rows="7" placeholder="Explique ton besoin..." required><?= htmlspecialchars((string) ($old['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+          <?= htmlspecialchars($t->text('contact_message'), ENT_QUOTES, 'UTF-8') ?>
+          <textarea name="message" rows="7" placeholder="<?= htmlspecialchars($t->text('contact_message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" required><?= htmlspecialchars((string) ($old['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
         </label>
 
-        <button type="submit" data-contact-submit>Envoyer</button>
+        <button type="submit" data-contact-submit><?= htmlspecialchars($t->text('contact_send'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
     </section>
   </main>

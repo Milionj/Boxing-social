@@ -1,15 +1,16 @@
+<?php require dirname(__DIR__, 2) . '/templates/partials/app-locale.php'; ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
-  <title>Administration</title>
+  <title><?= htmlspecialchars($t->text('admin_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css">
   <link rel="stylesheet" href="/css/admin-index.css">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
   <main class="page app-main">
-    <h1>Tableau de bord administration</h1>
+    <h1><?= htmlspecialchars($t->text('admin_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
 
     <?php if (!empty($success)): ?>
       <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
@@ -22,10 +23,10 @@
     <?php endif; ?>
 
     <section class="card">
-      <h2>Utilisateurs</h2>
+      <h2><?= htmlspecialchars($t->text('admin_users'), ENT_QUOTES, 'UTF-8') ?></h2>
       <table>
         <thead>
-          <tr><th>ID</th><th>Pseudo</th><th>Email</th><th>Role</th><th>Etat</th><th>Action</th></tr>
+          <tr><th>ID</th><th>Pseudo</th><th><?= htmlspecialchars($t->text('admin_email'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_role'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_status'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_action'), ENT_QUOTES, 'UTF-8') ?></th></tr>
         </thead>
         <tbody>
           <?php foreach ($users as $u): ?>
@@ -38,12 +39,12 @@
               </td>
               <td><?= htmlspecialchars((string) $u['email'], ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string) $u['role'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= ((int) $u['is_active'] === 1) ? 'actif' : 'desactive' ?></td>
+              <td><?= ((int) $u['is_active'] === 1) ? htmlspecialchars($t->text('admin_active'), ENT_QUOTES, 'UTF-8') : htmlspecialchars($t->text('admin_disabled'), ENT_QUOTES, 'UTF-8') ?></td>
               <td>
                 <form method="post" action="/admin/users/toggle">
                   <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
                   <input type="hidden" name="is_active" value="<?= ((int) $u['is_active'] === 1) ? '0' : '1' ?>">
-                  <button type="submit"><?= ((int) $u['is_active'] === 1) ? 'Desactiver' : 'Activer' ?></button>
+                  <button type="submit"><?= ((int) $u['is_active'] === 1) ? htmlspecialchars($t->text('admin_disable'), ENT_QUOTES, 'UTF-8') : htmlspecialchars($t->text('admin_enable'), ENT_QUOTES, 'UTF-8') ?></button>
                 </form>
               </td>
             </tr>
@@ -53,10 +54,10 @@
     </section>
 
     <section class="card">
-      <h2>Publications</h2>
+      <h2><?= htmlspecialchars($t->text('admin_posts'), ENT_QUOTES, 'UTF-8') ?></h2>
       <table>
         <thead>
-          <tr><th>ID</th><th>Auteur</th><th>Titre</th><th>Visibilite</th><th>Action</th></tr>
+          <tr><th>ID</th><th><?= htmlspecialchars($t->text('admin_author'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_title_column'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_visibility'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_action'), ENT_QUOTES, 'UTF-8') ?></th></tr>
         </thead>
         <tbody>
           <?php foreach ($posts as $p): ?>
@@ -70,9 +71,9 @@
               <td><?= htmlspecialchars((string) ($p['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string) $p['visibility'], ENT_QUOTES, 'UTF-8') ?></td>
               <td>
-                <form method="post" action="/admin/posts/delete" onsubmit="return confirm('Supprimer ce post ?');">
+                <form method="post" action="/admin/posts/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('admin_delete_post_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
                   <input type="hidden" name="post_id" value="<?= (int) $p['id'] ?>">
-                  <button type="submit">Supprimer</button>
+                  <button type="submit"><?= htmlspecialchars($t->text('admin_delete'), ENT_QUOTES, 'UTF-8') ?></button>
                 </form>
               </td>
             </tr>
@@ -82,10 +83,10 @@
     </section>
 
     <section class="card">
-      <h2>Commentaires</h2>
+      <h2><?= htmlspecialchars($t->text('admin_comments'), ENT_QUOTES, 'UTF-8') ?></h2>
       <table>
         <thead>
-          <tr><th>ID</th><th>Publication</th><th>Auteur</th><th>Contenu</th><th>Action</th></tr>
+          <tr><th>ID</th><th><?= htmlspecialchars($t->text('admin_post'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_author'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_content'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_action'), ENT_QUOTES, 'UTF-8') ?></th></tr>
         </thead>
         <tbody>
           <?php foreach ($comments as $c): ?>
@@ -99,9 +100,9 @@
               </td>
               <td><?= htmlspecialchars((string) $c['content'], ENT_QUOTES, 'UTF-8') ?></td>
               <td>
-                <form method="post" action="/admin/comments/delete" onsubmit="return confirm('Supprimer ce commentaire ?');">
+                <form method="post" action="/admin/comments/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('admin_delete_comment_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
                   <input type="hidden" name="comment_id" value="<?= (int) $c['id'] ?>">
-                  <button type="submit">Supprimer</button>
+                  <button type="submit"><?= htmlspecialchars($t->text('admin_delete'), ENT_QUOTES, 'UTF-8') ?></button>
                 </form>
               </td>
             </tr>
@@ -111,13 +112,13 @@
     </section>
 
     <section class="card">
-      <h2>Journal administration</h2>
+      <h2><?= htmlspecialchars($t->text('admin_log'), ENT_QUOTES, 'UTF-8') ?></h2>
       <?php if (empty($logs)): ?>
-        <p>Aucune action admin.</p>
+        <p><?= htmlspecialchars($t->text('admin_log_empty'), ENT_QUOTES, 'UTF-8') ?></p>
       <?php else: ?>
         <table>
           <thead>
-            <tr><th>Date</th><th>Administrateur</th><th>Action</th><th>Cible</th></tr>
+            <tr><th><?= htmlspecialchars($t->text('admin_date'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_administrator'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_action'), ENT_QUOTES, 'UTF-8') ?></th><th><?= htmlspecialchars($t->text('admin_target'), ENT_QUOTES, 'UTF-8') ?></th></tr>
           </thead>
           <tbody>
             <?php foreach ($logs as $log): ?>
@@ -135,7 +136,7 @@
           </tbody>
         </table>
       <?php endif; ?>
-      <p class="muted">Historique des actions sensibles pour audit.</p>
+      <p class="muted"><?= htmlspecialchars($t->text('admin_log_note'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>

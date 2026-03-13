@@ -9,3 +9,46 @@
 .pagination a{color:#1d4ed8;text-decoration:none}
 textarea,input,select,button{font-size:14px}
 button{cursor:pointer}
+
+.interest-form{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:14px 0;
+}
+
+.interest-form__hint{
+  color:#4a5565;
+  font-size:14px;
+}
+
+.interest-button{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid #30343a;
+  background:#20252b;
+  color:#f4efe7;
+  padding:10px 14px;
+}
+
+.interest-button__icon{
+  font-size:24px;
+  line-height:1;
+}
+
+.interest-button__count{
+  min-width:22px;
+  text-align:center;
+  font-weight:700;
+}
+
+.interest-button.is-active{
+  background:#7a2f25;
+  border-color:#7a2f25;
+}
+
+.interest-button:disabled{
+  cursor:default;
+  opacity:0.85;
+}

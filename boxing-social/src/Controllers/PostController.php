@@ -7,18 +7,21 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Models\Post;
 use App\Models\Comment;
+use App\Models\Message;
 use App\Models\Notification;
 
 final class PostController
 {
     private Post $posts;
     private Comment $comments;
+    private Message $messages;
     private Notification $notifications;
 
     public function __construct()
     {
         $this->posts = new Post();
         $this->comments = new Comment();
+        $this->messages = new Message();
         $this->notifications = new Notification();
     }
 
@@ -43,6 +46,20 @@ final class PostController
         $response->redirect($fallback);
     }
 
+    private function buildTrainingInterestMessage(array $post, string $username): string
+    {
+        // Message automatique envoye a l'annonceur quand quelqu'un
+        // manifeste son interet sur une seance d entrainement.
+        $title = trim((string) ($post['title'] ?? ''));
+        $sessionLabel = $title !== '' ? $title : 'seance sans titre';
+
+        return sprintf(
+            '%s a manifeste son interet pour votre seance "%s".',
+            $username,
+            $sessionLabel
+        );
+    }
+
     public function index(Request $request, Response $response): void
     {
         $perPage = 8;
@@ -61,16 +78,21 @@ final class PostController
 
         $likesCountByPost = [];
         $likedByCurrentUser = [];
+        $interestCountByPost = [];
+        $interestedByCurrentUser = [];
 
         $currentUserId = $_SESSION['user']['id'] ?? null;
         foreach ($feed as $post) {
             $postId = (int) $post['id'];
             $likesCountByPost[$postId] = $this->posts->likesCountByPostId($postId);
+            $interestCountByPost[$postId] = $this->posts->interestCountByPostId($postId);
 
             if (is_int($currentUserId)) {
                 $likedByCurrentUser[$postId] = $this->posts->isLikedByUser($postId, $currentUserId);
+                $interestedByCurrentUser[$postId] = $this->posts->hasInterestByUser($postId, $currentUserId);
             } else {
                 $likedByCurrentUser[$postId] = false;
+                $interestedByCurrentUser[$postId] = false;
             }
         }
 
@@ -94,14 +116,24 @@ final class PostController
 
         $comments = $this->comments->byPostId($postId);
         $likesCount = $this->posts->likesCountByPostId($postId);
+        $interestCount = $this->posts->interestCountByPostId($postId);
 
         $currentUserId = $_SESSION['user']['id'] ?? null;
         $isLiked = is_int($currentUserId) ? $this->posts->isLikedByUser($postId, $currentUserId) : false;
+        $isInterested = is_int($currentUserId) ? $this->posts->hasInterestByUser($postId, $currentUserId) : false;
 
         $errorsComments = $_SESSION['errors_comments'] ?? [];
         $successComments = $_SESSION['success_comments'] ?? '';
         $errorsLikes = $_SESSION['errors_likes'] ?? [];
-        unset($_SESSION['errors_comments'], $_SESSION['success_comments'], $_SESSION['errors_likes']);
+        $errorsInterest = $_SESSION['errors_posts_interest'] ?? [];
+        $successInterest = $_SESSION['success_posts_interest'] ?? '';
+        unset(
+            $_SESSION['errors_comments'],
+            $_SESSION['success_comments'],
+            $_SESSION['errors_likes'],
+            $_SESSION['errors_posts_interest'],
+            $_SESSION['success_posts_interest']
+        );
 
         require dirname(__DIR__, 2) . '/templates/posts/show.php';
     }
@@ -141,6 +173,71 @@ final class PostController
             );
         }
 
+        $this->redirectBack($request, $response, '/posts');
+    }
+
+    public function expressInterest(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response);
+        if ($userId === null) {
+            return;
+        }
+
+        $postId = (int) $request->input('post_id', 0);
+        if ($postId <= 0) {
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        $post = $this->posts->findDetailedById($postId);
+        if ($post === null) {
+            $_SESSION['errors_posts_interest'] = ['Seance introuvable.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        if (($post['post_type'] ?? 'publication') !== 'entrainement') {
+            $_SESSION['errors_posts_interest'] = ['Cette action est reservee aux declarations de seances.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        if ((int) $post['user_id'] === $userId) {
+            $_SESSION['errors_posts_interest'] = ['Vous ne pouvez pas manifester votre interet sur votre propre seance.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        if ($this->posts->hasInterestByUser($postId, $userId)) {
+            $_SESSION['errors_posts_interest'] = ['Vous avez deja manifeste votre interet pour cette seance.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        $username = (string) ($_SESSION['user']['username'] ?? 'Un utilisateur');
+        $content = $this->buildTrainingInterestMessage($post, $username);
+
+        if (!$this->posts->addInterest($postId, $userId)) {
+            $_SESSION['errors_posts_interest'] = ['Vous avez deja manifeste votre interet pour cette seance.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        if (!$this->messages->send($userId, (int) $post['user_id'], $content)) {
+            $_SESSION['errors_posts_interest'] = ['Impossible d envoyer votre interet pour le moment.'];
+            $this->redirectBack($request, $response, '/posts');
+            return;
+        }
+
+        $this->notifications->create(
+            (int) $post['user_id'],
+            $userId,
+            'message',
+            null,
+            'Un utilisateur a manifeste son interet pour votre seance.'
+        );
+
+        $_SESSION['success_posts_interest'] = 'Votre interet a ete envoye a l annonceur.';
         $this->redirectBack($request, $response, '/posts');
     }
 
@@ -221,13 +318,20 @@ public function deleteComment(Request $request, Response $response): void
             return;
         }
 
+        $postType = (string) $request->input('post_type', 'publication');
         $title = trim((string) $request->input('title', ''));
         $content = trim((string) $request->input('content', ''));
         $location = trim((string) $request->input('location', ''));
         $visibility = (string) $request->input('visibility', 'public');
+        $scheduledAt = trim((string) $request->input('scheduled_at', ''));
 
+        $allowedTypes = ['publication', 'entrainement'];
         $allowedVisibility = ['public', 'friends', 'private'];
         $errors = [];
+
+        if (!in_array($postType, $allowedTypes, true)) {
+            $errors[] = 'Type de post invalide.';
+        }
 
         if ($content === '' || strlen($content) < 5) {
             $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
@@ -235,6 +339,20 @@ public function deleteComment(Request $request, Response $response): void
 
         if (!in_array($visibility, $allowedVisibility, true)) {
             $errors[] = 'Visibilite invalide.';
+        }
+
+        $normalizedScheduledAt = null;
+        if ($postType === 'entrainement') {
+            if ($scheduledAt === '') {
+                $errors[] = 'Une seance d entrainement doit avoir une date et une heure.';
+            } else {
+                $timestamp = strtotime($scheduledAt);
+                if ($timestamp === false) {
+                    $errors[] = 'Date de seance invalide.';
+                } else {
+                    $normalizedScheduledAt = date('Y-m-d H:i:s', $timestamp);
+                }
+            }
         }
 
         $imagePath = null;
@@ -286,7 +404,7 @@ public function deleteComment(Request $request, Response $response): void
             return;
         }
 
-        $this->posts->create($userId, $title, $content, $imagePath, $location, $visibility);
+        $this->posts->create($userId, $postType, $title, $content, $imagePath, $location, $visibility, $normalizedScheduledAt);
         $_SESSION['success_posts'] = 'Post cree avec succes.';
         $response->redirect('/posts');
     }
@@ -324,20 +442,39 @@ public function update(Request $request, Response $response): void
     }
 
     $postId = (int) $request->input('id', 0);
+    $postType = (string) $request->input('post_type', 'publication');
     $title = trim((string) $request->input('title', ''));
     $content = trim((string) $request->input('content', ''));
     $location = trim((string) $request->input('location', ''));
     $visibility = (string) $request->input('visibility', 'public');
+    $scheduledAt = trim((string) $request->input('scheduled_at', ''));
 
     $errors = [];
     if ($postId <= 0) {
         $errors[] = 'Post invalide.';
+    }
+    if (!in_array($postType, ['publication', 'entrainement'], true)) {
+        $errors[] = 'Type de post invalide.';
     }
     if ($content === '' || strlen($content) < 5) {
         $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
     }
     if (!in_array($visibility, ['public', 'friends', 'private'], true)) {
         $errors[] = 'Visibilite invalide.';
+    }
+
+    $normalizedScheduledAt = null;
+    if ($postType === 'entrainement') {
+        if ($scheduledAt === '') {
+            $errors[] = 'Une seance d entrainement doit avoir une date et une heure.';
+        } else {
+            $timestamp = strtotime($scheduledAt);
+            if ($timestamp === false) {
+                $errors[] = 'Date de seance invalide.';
+            } else {
+                $normalizedScheduledAt = date('Y-m-d H:i:s', $timestamp);
+            }
+        }
     }
 
     $post = $this->posts->findById($postId);
@@ -351,7 +488,7 @@ public function update(Request $request, Response $response): void
         return;
     }
 
-    $this->posts->updateByOwner($postId, $userId, $title, $content, $location, $visibility);
+    $this->posts->updateByOwner($postId, $userId, $postType, $title, $content, $location, $visibility, $normalizedScheduledAt);
     $response->redirect('/posts');
 }
 

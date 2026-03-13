@@ -86,6 +86,49 @@ button {
   color: #89d4a1;
 }
 
+.interest-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.interest-form__hint {
+  color: #c8b9a4;
+}
+
+.interest-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(212, 195, 157, 0.22);
+  background: #11151a;
+  color: #fff8f0;
+  padding: 12px 16px;
+}
+
+.interest-button__icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.interest-button__count {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.interest-button.is-active {
+  background: #7f3428;
+  border-color: #7f3428;
+}
+
+.interest-button:disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
 @media (max-width: 700px) {
   .post-card,
   .comments-card {

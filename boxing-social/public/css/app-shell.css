@@ -7,6 +7,43 @@ body.app-shell {
   color: #f3efe8;
 }
 
+body.app-shell[data-theme="clair"] {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0)),
+    linear-gradient(135deg, #e8e1d7 0%, #d6cdc0 52%, #f1ece4 100%);
+  color: #241f1a;
+}
+
+body.app-shell[data-theme="clair"] .app-nav,
+body.app-shell[data-theme="clair"] .app-footer {
+  background: rgba(246, 240, 231, 0.92);
+  border-color: rgba(73, 61, 46, 0.12);
+}
+
+body.app-shell[data-theme="clair"] .app-nav a,
+body.app-shell[data-theme="clair"] .app-footer__links a,
+body.app-shell[data-theme="clair"] .app-nav__user span,
+body.app-shell[data-theme="clair"] .app-nav__menu summary,
+body.app-shell[data-theme="clair"] .app-footer p {
+  color: #2d261f;
+}
+
+body.app-shell[data-theme="clair"] .app-nav__dropdown {
+  background: #f7f1e8;
+  border-color: rgba(73, 61, 46, 0.14);
+}
+
+body.app-shell[data-theme="clair"] .app-nav__logout button {
+  background: #1a1a1a;
+}
+
+body.app-shell[data-theme="sombre"] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, #15181d 0%, #1e2329 52%, #111418 100%);
+  color: #f3efe8;
+}
+
 .app-shell {
   font-family: Georgia, "Times New Roman", serif;
 }

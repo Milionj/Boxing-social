@@ -5,6 +5,7 @@ namespace App\Models;
 
 use App\Database\Database;
 use PDO;
+use PDOException;
 
 /**
  * Modèle Notification
@@ -46,6 +47,12 @@ final class Notification
         ?int $entityId,
         ?string $content
     ): bool {
+        // Si la table de preferences existe et que l'utilisateur a coupe les notifications,
+        // on considère l'action comme "OK" mais on n'insere rien.
+        if (!$this->notificationsEnabledForUser($userId)) {
+            return true;
+        }
+
         $stmt = $this->pdo->prepare(
             'INSERT INTO notifications (user_id, actor_id, type, entity_id, content, is_read)
              VALUES (:user_id, :actor_id, :type, :entity_id, :content, 0)'
@@ -137,5 +144,28 @@ final class Notification
         );
 
         return $stmt->execute(['user_id' => $userId]);
+    }
+
+    private function notificationsEnabledForUser(int $userId): bool
+    {
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT notifications_enabled
+                 FROM user_settings
+                 WHERE user_id = :user_id
+                 LIMIT 1'
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $value = $stmt->fetchColumn();
+
+            if ($value === false) {
+                return true;
+            }
+
+            return (int) $value === 1;
+        } catch (PDOException) {
+            // Si la table user_settings n'existe pas encore, on conserve le comportement historique.
+            return true;
+        }
     }
 }

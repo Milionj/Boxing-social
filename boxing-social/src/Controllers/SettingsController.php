@@ -27,6 +27,11 @@ final class SettingsController
         return $id;
     }
 
+    private function message(string $language, string $french, string $english): string
+    {
+        return $language === 'anglais' ? $english : $french;
+    }
+
     public function show(Response $response): void
     {
         $userId = $this->requireAuth($response);
@@ -65,7 +70,7 @@ final class SettingsController
         $errors = [];
 
         if (!in_array($theme, ['systeme', 'clair', 'sombre'], true)) {
-            $errors[] = 'Theme invalide.';
+            $errors[] = $this->message($language, 'Theme invalide.', 'Invalid theme.');
         }
 
         if (!in_array($language, ['francais', 'anglais'], true)) {
@@ -73,11 +78,11 @@ final class SettingsController
         }
 
         if (!in_array($parentalControls, ['0', '1'], true)) {
-            $errors[] = 'Valeur invalide pour les controles parentaux.';
+            $errors[] = $this->message($language, 'Valeur invalide pour les controles parentaux.', 'Invalid value for parental controls.');
         }
 
         if (!in_array($notificationsEnabled, ['0', '1'], true)) {
-            $errors[] = 'Valeur invalide pour les notifications.';
+            $errors[] = $this->message($language, 'Valeur invalide pour les notifications.', 'Invalid value for notifications.');
         }
 
         if ($errors !== []) {
@@ -93,7 +98,7 @@ final class SettingsController
             'notifications_enabled' => (int) $notificationsEnabled,
         ]);
 
-        $_SESSION['success_settings'] = 'Parametres mis a jour.';
+        $_SESSION['success_settings'] = $this->message($language, 'Parametres mis a jour.', 'Settings updated.');
         $response->redirect('/settings');
     }
 }
