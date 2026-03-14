@@ -39,7 +39,9 @@ use App\Controllers\AdminController;
 use App\Controllers\SearchController;
 use App\Controllers\ContactController;
 use App\Controllers\SettingsController;
+use App\Models\Comment;
 use App\Models\Notification;
+use App\Models\Post;
 
 
 session_start();
@@ -91,7 +93,7 @@ try {
     // Notifications
     $router->get('/notifications', fn() => (new NotificationController())->index($response));
     $router->post('/notifications/read', fn() => (new NotificationController())->markRead($request, $response));
-    $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($response));
+    $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($request, $response));
 
     // Messages privés
     $router->get('/messages', fn() => (new MessageController())->index($request, $response));
@@ -107,13 +109,43 @@ try {
     $router->post('/admin/posts/delete', fn() => (new AdminController())->deletePost($request, $response));
     $router->post('/admin/comments/delete', fn() => (new AdminController())->deleteComment($request, $response));
 
-    $router->get('/', function () use ($response): void {
+    $router->get('/', function () use ($request, $response): void {
         $user = $_SESSION['user']['username'] ?? null;
         $role = $_SESSION['user']['role'] ?? null;
         $unreadNotifications = 0;
 
         if ($user !== null) {
             $userId = $_SESSION['user']['id'] ?? null;
+            $postModel = new Post();
+            $commentModel = new Comment();
+            $perPage = 8;
+            $currentPage = max(1, (int) $request->input('page', 1));
+            $totalPosts = $postModel->feedCount();
+            $totalPages = max(1, (int) ceil($totalPosts / $perPage));
+            $currentPage = min($currentPage, $totalPages);
+            $offset = ($currentPage - 1) * $perPage;
+            $feed = $postModel->latestFeed($perPage, $offset);
+            $commentsByPost = [];
+            $likesCountByPost = [];
+            $likedByCurrentUser = [];
+            $interestCountByPost = [];
+            $interestedByCurrentUser = [];
+
+            foreach ($feed as $post) {
+                $postId = (int) $post['id'];
+                $commentsByPost[$postId] = $commentModel->byPostId($postId);
+                $likesCountByPost[$postId] = $postModel->likesCountByPostId($postId);
+                $interestCountByPost[$postId] = $postModel->interestCountByPostId($postId);
+
+                if (is_int($userId)) {
+                    $likedByCurrentUser[$postId] = $postModel->isLikedByUser($postId, $userId);
+                    $interestedByCurrentUser[$postId] = $postModel->hasInterestByUser($postId, $userId);
+                } else {
+                    $likedByCurrentUser[$postId] = false;
+                    $interestedByCurrentUser[$postId] = false;
+                }
+            }
+
             if (is_int($userId)) {
                 $unreadNotifications = (new Notification())->unreadCount($userId);
             }

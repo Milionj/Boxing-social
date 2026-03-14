@@ -1,72 +1,87 @@
+<?php require dirname(__DIR__) . '/partials/app-locale.php'; ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
-  <title>Recherche</title>
-  <link rel="stylesheet" href="/css/search-index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= htmlspecialchars($t->text('nav_search'), ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
+  <link rel="stylesheet" href="/css/search-index.css?v=20260314d">
   <script src="/js/search-autocomplete.js" defer></script>
 </head>
-<body>
-  <main class="page">
-    <header class="hero">
-      <p class="eyebrow">Recherche</p>
-      <h1>Trouver une personne ou une publication</h1>
-      <p class="intro">Recherche rapide par pseudo, titre ou contenu.</p>
+<body class="app-shell">
+  <?php require dirname(__DIR__) . '/partials/app-navbar.php'; ?>
 
+  <main class="search-page app-main">
+    <section class="search-hero">
+      <h1><?= htmlspecialchars($t->text('search_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+      <p><?= htmlspecialchars($t->text('search_intro'), ENT_QUOTES, 'UTF-8') ?></p>
+    </section>
+
+    <section class="search-card">
       <form class="search-form" method="get" action="/search" autocomplete="off">
         <div class="autocomplete">
           <input
             type="text"
             name="q"
             value="<?= htmlspecialchars($query, ENT_QUOTES, 'UTF-8') ?>"
-            placeholder="Exemple : serge, boxe, sparring..."
+            placeholder="<?= htmlspecialchars($t->text('search_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
             data-user-autocomplete
             data-autocomplete-endpoint="/search/usernames"
             required
           >
           <div class="autocomplete-list" hidden></div>
         </div>
-        <button type="submit">Rechercher</button>
+        <button type="submit"><?= htmlspecialchars($t->text('home_search_button'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
 
-      <nav class="links">
-        <a href="/">Accueil</a>
-        <a href="/posts">Publications</a>
-        <a href="/friends">Amis</a>
-        <a href="/messages">Messages</a>
-      </nav>
-    </header>
+      <div class="search-shortcuts">
+        <a href="/"><?= htmlspecialchars($t->text('home_title'), ENT_QUOTES, 'UTF-8') ?></a>
+        <a href="/posts"><?= htmlspecialchars($t->text('posts_title'), ENT_QUOTES, 'UTF-8') ?></a>
+        <a href="/friends"><?= htmlspecialchars($t->text('nav_friends'), ENT_QUOTES, 'UTF-8') ?></a>
+        <a href="/messages"><?= htmlspecialchars($t->text('nav_messages'), ENT_QUOTES, 'UTF-8') ?></a>
+      </div>
+    </section>
 
     <?php if ($query === ''): ?>
-      <section class="empty-state">
-        <h2>Lance une recherche</h2>
-        <p>Saisis un mot-cle pour afficher les utilisateurs et les publications correspondants.</p>
+      <section class="search-empty card">
+        <h2><?= htmlspecialchars($t->text('search_empty_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+        <p><?= htmlspecialchars($t->text('search_empty_text'), ENT_QUOTES, 'UTF-8') ?></p>
       </section>
     <?php else: ?>
-      <section class="results-grid">
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Utilisateurs</h2>
-            <span><?= count($users) ?> resultat(s)</span>
+      <section class="search-results">
+        <section class="search-panel card">
+          <div class="search-panel__head">
+            <div>
+              <h2><?= htmlspecialchars($t->text('search_users_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+            <span class="search-panel__count"><?= count($users) ?> <?= htmlspecialchars($t->text('search_results_suffix'), ENT_QUOTES, 'UTF-8') ?></span>
           </div>
 
-          <?php if (empty($users)): ?>
-            <p class="muted">Aucun utilisateur ne correspond a cette recherche.</p>
+          <?php if ($users === []): ?>
+            <p class="search-muted"><?= htmlspecialchars($t->text('search_no_users'), ENT_QUOTES, 'UTF-8') ?></p>
           <?php else: ?>
-            <div class="cards">
+            <div class="search-grid">
               <?php foreach ($users as $user): ?>
-                <article class="card">
-                  <h3>
-                    <a class="user-link" href="/user?username=<?= rawurlencode((string) $user['username']) ?>">
-                      <?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>
-                    </a>
-                  </h3>
-                  <p>
-                    <?= htmlspecialchars((string) ($user['bio'] ?? 'Aucune bio pour le moment.'), ENT_QUOTES, 'UTF-8') ?>
+                <article class="search-result-card">
+                  <div class="search-result-card__head">
+                    <div class="search-result-card__avatar"><?= htmlspecialchars(strtoupper(substr((string) $user['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></div>
+                    <div>
+                      <h3>
+                        <a class="search-user-link" href="/user?username=<?= rawurlencode((string) $user['username']) ?>">
+                          <?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                      </h3>
+                    </div>
+                  </div>
+
+                  <p class="search-result-card__text">
+                    <?= htmlspecialchars((string) ($user['bio'] ?? $t->text('search_no_bio')), ENT_QUOTES, 'UTF-8') ?>
                   </p>
+
                   <form method="post" action="/friends/send">
                     <input type="hidden" name="username" value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit">Envoyer une demande</button>
+                    <button type="submit"><?= htmlspecialchars($t->text('search_send_request'), ENT_QUOTES, 'UTF-8') ?></button>
                   </form>
                 </article>
               <?php endforeach; ?>
@@ -74,31 +89,39 @@
           <?php endif; ?>
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
-            <h2>Publications</h2>
-            <span><?= count($posts) ?> resultat(s)</span>
+        <section class="search-panel card">
+          <div class="search-panel__head">
+            <div>
+              <h2><?= htmlspecialchars($t->text('search_posts_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+            <span class="search-panel__count"><?= count($posts) ?> <?= htmlspecialchars($t->text('search_results_suffix'), ENT_QUOTES, 'UTF-8') ?></span>
           </div>
 
-          <?php if (empty($posts)): ?>
-            <p class="muted">Aucune publication ne correspond a cette recherche.</p>
+          <?php if ($posts === []): ?>
+            <p class="search-muted"><?= htmlspecialchars($t->text('search_no_posts'), ENT_QUOTES, 'UTF-8') ?></p>
           <?php else: ?>
-            <div class="cards">
+            <div class="search-grid">
               <?php foreach ($posts as $post): ?>
-                <article class="card post-card">
-                  <p class="post-meta">
-                    Par
-                    <a class="user-link" href="/user?username=<?= rawurlencode((string) $post['username']) ?>">
+                <article class="search-result-card search-result-card--post">
+                  <p class="search-post-meta">
+                    <?= htmlspecialchars($t->text('post_by'), ENT_QUOTES, 'UTF-8') ?>
+                    <a class="search-user-link" href="/user?username=<?= rawurlencode((string) $post['username']) ?>">
                       <?= htmlspecialchars((string) $post['username'], ENT_QUOTES, 'UTF-8') ?>
                     </a>
                   </p>
-                  <h3><?= htmlspecialchars((string) ($post['title'] ?: 'Publication sans titre'), ENT_QUOTES, 'UTF-8') ?></h3>
+
+                  <h3><?= htmlspecialchars((string) ($post['title'] ?: $t->text('post_untitled')), ENT_QUOTES, 'UTF-8') ?></h3>
+
                   <?php $excerpt = substr((string) $post['content'], 0, 180); ?>
-                  <p><?= htmlspecialchars($excerpt . (strlen((string) $post['content']) > 180 ? '...' : ''), ENT_QUOTES, 'UTF-8') ?></p>
+                  <p class="search-result-card__text">
+                    <?= htmlspecialchars($excerpt . (strlen((string) $post['content']) > 180 ? '...' : ''), ENT_QUOTES, 'UTF-8') ?>
+                  </p>
+
                   <?php if (!empty($post['image_path'])): ?>
-                    <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image de publication">
+                    <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
                   <?php endif; ?>
-                  <a class="btn-link" href="/post?id=<?= (int) $post['id'] ?>">Voir la publication</a>
+
+                  <a class="search-open-post" href="/post?id=<?= (int) $post['id'] ?>"><?= htmlspecialchars($t->text('search_view_post'), ENT_QUOTES, 'UTF-8') ?></a>
                 </article>
               <?php endforeach; ?>
             </div>
@@ -107,5 +130,7 @@
       </section>
     <?php endif; ?>
   </main>
+
+  <?php require dirname(__DIR__) . '/partials/app-footer.php'; ?>
 </body>
 </html>

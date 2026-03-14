@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>500 - Erreur serveur</title>
   <link rel="stylesheet" href="/css/errors.css">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260314a">
 </head>
 <body>
   <main class="page">
@@ -11,5 +12,6 @@
     <p>Une erreur serveur est survenue. Reessayez dans un instant.</p>
     <p><a href="/">Retour a l'accueil</a></p>
   </main>
+  <?php require dirname(__DIR__) . '/../partials/scroll-top.php'; ?>
 </body>
 </html>

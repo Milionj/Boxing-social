@@ -88,6 +88,8 @@ final class ProfileController
 
         $username = trim((string) $request->input('username', ''));
         $email = strtolower(trim((string) $request->input('email', '')));
+        // La bio reste optionnelle, mais on borne sa taille pour garder
+        // une fiche profil lisible et un stockage raisonnable.
         $bio = trim((string) $request->input('bio', ''));
 
         $errors = [];
@@ -100,6 +102,9 @@ final class ProfileController
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Email invalide.';
+        }
+        if (strlen($bio) > 500) {
+            $errors[] = 'La bio ne doit pas depasser 500 caracteres.';
         }
         if ($this->users->existsByUsername($username, $userId)) {
             $errors[] = 'Ce pseudo est deja utilise.';

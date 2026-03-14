@@ -120,14 +120,14 @@ final class NotificationController
         }
 
         // Redirection (pattern PRG : POST -> Redirect -> GET)
-        $response->redirect('/notifications');
+        $this->redirectBack($request, $response);
     }
 
     /**
      * POST /notifications/read-all
      * Marque toutes les notifications de l'utilisateur comme lues
      */
-    public function markAllRead(Response $response): void
+    public function markAllRead(Request $request, Response $response): void
     {
         $userId = $this->requireAuth($response);
         if ($userId === null) {
@@ -136,7 +136,18 @@ final class NotificationController
 
         $this->notifications->markAllRead($userId);
 
-        // Retour à la page notifications
-        $response->redirect('/notifications');
+        // Retour à la page courante ou au centre de notifications.
+        $this->redirectBack($request, $response);
+    }
+
+    private function redirectBack(Request $request, Response $response): void
+    {
+        $redirectTo = (string) $request->input('redirect_to', '/notifications');
+
+        if ($redirectTo === '' || !str_starts_with($redirectTo, '/')) {
+            $redirectTo = '/notifications';
+        }
+
+        $response->redirect($redirectTo);
     }
 }

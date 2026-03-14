@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Inscription</title>
   <link rel="stylesheet" href="/css/auth-register.css">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260314a">
 </head>
 <body>
   <main class="page">
@@ -25,5 +26,6 @@
 
     <a class="link" href="/login">Deja un compte ? Connexion</a>
   </main>
+  <?php require dirname(__DIR__) . '/templates/partials/scroll-top.php'; ?>
 </body>
 </html>

@@ -4,24 +4,22 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('settings_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css">
-  <link rel="stylesheet" href="/css/static-page.css">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
+  <link rel="stylesheet" href="/css/static-page.css?v=20260313n">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
   <main class="static-page app-main">
     <section class="static-hero">
-      <p class="static-eyebrow"><?= htmlspecialchars($t->text('settings_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
       <h1><?= htmlspecialchars($t->text('settings_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
-      <p><?= htmlspecialchars($t->text('settings_intro'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
 
-    <section class="static-card settings-grid">
+    <section class="static-card static-card--settings settings-grid">
       <div class="settings-menu">
         <button type="button" class="is-active"><?= htmlspecialchars($t->text('settings_general'), ENT_QUOTES, 'UTF-8') ?></button>
       </div>
 
-      <div>
+      <div class="settings-content">
         <?php if (!empty($success)): ?>
           <p class="msg-success"><?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?></p>
         <?php endif; ?>
