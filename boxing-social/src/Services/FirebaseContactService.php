@@ -27,7 +27,7 @@ final class FirebaseContactService
         }
 
         if (!function_exists('curl_init')) {
-            throw new RuntimeException('L extension cURL est requise pour envoyer le message vers Firebase.');
+            throw new RuntimeException('L’extension cURL est requise pour envoyer le message vers Firebase.');
         }
 
         $ch = curl_init($url);
@@ -45,11 +45,11 @@ final class FirebaseContactService
         curl_close($ch);
 
         if ($result === false || $curlError !== '') {
-            throw new RuntimeException('Echec de connexion a Firebase: ' . $curlError);
+            throw new RuntimeException('Échec de connexion à Firebase : ' . $curlError);
         }
 
         if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException('Firebase a retourne le code HTTP ' . $statusCode . '.');
+            throw new RuntimeException('Firebase a retourné le code HTTP ' . $statusCode . '.');
         }
     }
 }

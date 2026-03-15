@@ -190,11 +190,11 @@ final class MessageController
             $userId,     // acteur (celui qui a envoyé le message)
             'message',
             null,        // pas d'entity_id utilisé ici (possible plus tard)
-            'Vous avez recu un nouveau message.'
+            'Vous avez reçu un nouveau message.'
         );
 
         // 7) Message flash succès + retour sur la conversation
-        $_SESSION['success_messages'] = 'Message envoye.';
+        $_SESSION['success_messages'] = 'Message envoyé.';
         $response->redirect('/messages?user_id=' . $receiverId);
     }
 }

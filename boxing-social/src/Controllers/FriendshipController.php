@@ -122,7 +122,7 @@ final class FriendshipController
 
         // Si échec (ex: doublon, contrainte SQL, etc.)
         if (!$ok) {
-            $_SESSION['errors_friends'] = ['Impossible d envoyer la demande (deja existante ?)'];
+            $_SESSION['errors_friends'] = ['Impossible d’envoyer la demande (déjà existante ?)'];
             $response->redirect('/friends');
             return;
         }
@@ -132,11 +132,11 @@ final class FriendshipController
             $userId,
             'friend_request',
             null,
-            'Vous avez recu une demande d ami.'
+            'Vous avez reçu une demande d’ami.'
         );
 
         // Message flash succès + redirect
-        $_SESSION['success_friends'] = 'Demande envoyee.';
+        $_SESSION['success_friends'] = 'Demande envoyée.';
         $response->redirect('/friends');
     }
 
@@ -182,11 +182,11 @@ final class FriendshipController
                 $userId,
                 'friend_accept',
                 null,
-                'Votre demande d ami a ete acceptee.'
+                'Votre demande d’ami a été acceptée.'
             );
         }
 
-        $_SESSION['success_friends'] = 'Demande acceptee.';
+        $_SESSION['success_friends'] = 'Demande acceptée.';
         $response->redirect('/friends');
     }
 
@@ -214,7 +214,7 @@ final class FriendshipController
         // Le modèle applique la mise à jour conditionnelle vers "declined"
         $this->friendships->updateStatusByAddressee($id, $userId, 'declined');
 
-        $_SESSION['success_friends'] = 'Demande refusee.';
+        $_SESSION['success_friends'] = 'Demande refusée.';
         $response->redirect('/friends');
     }
 }

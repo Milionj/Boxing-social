@@ -4,27 +4,54 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('posts_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/posts-index.css?v=20260314e">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315m">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260315m">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
   <main class="posts-page app-main">
     <section class="posts-hero">
       <h1><?= htmlspecialchars($t->text('posts_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
-      <p>Retrouve l ensemble des publications et declarations de seances dans un fil continu, avec commentaires et interactions.</p>
+      <p><?= htmlspecialchars($t->text('posts_intro'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
 
-    <section class="posts-feed">
-      <div class="posts-feed__head">
-        <p class="posts-feed__eyebrow">Fil complet</p>
-      </div>
+    <div class="posts-layout">
+      <section class="posts-feed">
+        <div class="posts-feed__head">
+          <p class="posts-feed__eyebrow"><?= htmlspecialchars($t->text('posts_feed_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
 
-      <div class="posts-feed__body">
-        <?php $feedBasePath = '/posts'; ?>
-        <?php require dirname(__DIR__, 2) . '/templates/posts/feed-list.php'; ?>
-      </div>
-    </section>
+        <div class="posts-feed__body">
+          <?php $feedBasePath = '/posts'; ?>
+          <?php require dirname(__DIR__, 2) . '/templates/posts/feed-list.php'; ?>
+        </div>
+      </section>
+
+      <aside class="feed-side-rail" aria-label="Raccourci amis">
+        <section class="feed-side-card">
+          <div class="feed-side-card__head">
+            <div>
+              <p class="feed-side-card__eyebrow">Amis</p>
+              <h2><?= htmlspecialchars($t->text('friends_quick_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+            <a href="/friends"><?= htmlspecialchars($t->text('friends_quick_view_all'), ENT_QUOTES, 'UTF-8') ?></a>
+          </div>
+
+          <?php if (empty($quickFriends)): ?>
+            <p class="feed-side-card__empty"><?= htmlspecialchars($t->text('friends_quick_empty'), ENT_QUOTES, 'UTF-8') ?></p>
+          <?php else: ?>
+            <div class="feed-side-card__list">
+              <?php foreach ($quickFriends as $friend): ?>
+                <a class="feed-side-card__friend" href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
+                  <span class="feed-side-card__avatar"><?= htmlspecialchars(strtoupper(substr((string) $friend['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+                  <span class="feed-side-card__name"><?= htmlspecialchars((string) $friend['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </section>
+      </aside>
+    </div>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>

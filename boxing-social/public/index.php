@@ -38,11 +38,37 @@ use App\Controllers\MessageController;
 use App\Controllers\AdminController;
 use App\Controllers\SearchController;
 use App\Controllers\ContactController;
+use App\Controllers\CookiePreferencesController;
 use App\Controllers\SettingsController;
 use App\Models\Comment;
+use App\Models\Friendship;
 use App\Models\Notification;
 use App\Models\Post;
 
+
+// Cookie de session strictement necessaire :
+// - pas de persistance longue (lifetime 0)
+// - HttpOnly pour limiter l'acces en JavaScript
+// - SameSite Lax pour reduire les risques CSRF de base
+// - Secure uniquement en HTTPS
+$appUrl = (string) ($_ENV['APP_URL'] ?? '');
+$appUrlScheme = parse_url($appUrl, PHP_URL_SCHEME);
+$isHttps = (
+    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+    || $appUrlScheme === 'https'
+);
+
+session_name('boxing_social_session');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+ini_set('session.use_only_cookies', '1');
+ini_set('session.use_strict_mode', '1');
 
 session_start();
 
@@ -118,6 +144,7 @@ try {
             $userId = $_SESSION['user']['id'] ?? null;
             $postModel = new Post();
             $commentModel = new Comment();
+            $friendshipModel = new Friendship();
             $perPage = 8;
             $currentPage = max(1, (int) $request->input('page', 1));
             $totalPosts = $postModel->feedCount();
@@ -148,6 +175,9 @@ try {
 
             if (is_int($userId)) {
                 $unreadNotifications = (new Notification())->unreadCount($userId);
+                $quickFriends = array_slice($friendshipModel->friendsOf($userId), 0, 10);
+            } else {
+                $quickFriends = [];
             }
 
             ob_start();
@@ -163,6 +193,9 @@ try {
 
     $router->get('/contact', fn() => (new ContactController())->show($response));
     $router->post('/contact', fn() => (new ContactController())->submit($request, $response));
+
+    $router->get('/cookie-preferences', fn() => (new CookiePreferencesController())->show($request, $response));
+    $router->post('/cookie-preferences', fn() => (new CookiePreferencesController())->update($request, $response));
 
     $router->get('/privacy', function () use ($response): void {
         ob_start();

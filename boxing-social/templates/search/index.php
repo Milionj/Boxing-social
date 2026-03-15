@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('nav_search'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/search-index.css?v=20260314d">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/search-index.css?v=20260315i">
   <script src="/js/search-autocomplete.js" defer></script>
 </head>
 <body class="app-shell">
@@ -118,7 +118,13 @@
                   </p>
 
                   <?php if (!empty($post['image_path'])): ?>
-                    <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
+                    <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                      <video controls preload="metadata">
+                        <source src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>">
+                      </video>
+                    <?php else: ?>
+                      <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
                   <?php endif; ?>
 
                   <a class="search-open-post" href="/post?id=<?= (int) $post['id'] ?>"><?= htmlspecialchars($t->text('search_view_post'), ENT_QUOTES, 'UTF-8') ?></a>

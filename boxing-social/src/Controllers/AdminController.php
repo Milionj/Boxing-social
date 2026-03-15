@@ -79,14 +79,14 @@ final class AdminController
         }
 
         if ($userId === $adminId) {
-            $_SESSION['errors_admin'] = ['Action refusee: impossible de desactiver votre propre compte admin.'];
+            $_SESSION['errors_admin'] = ['Action refusée : impossible de désactiver votre propre compte admin.'];
             $response->redirect('/admin');
             return;
         }
 
         $ok = $this->users->setActiveByAdmin($userId, $isActive);
         if (!$ok) {
-            $_SESSION['errors_admin'] = ['Mise a jour utilisateur impossible.'];
+            $_SESSION['errors_admin'] = ['Mise à jour utilisateur impossible.'];
             $response->redirect('/admin');
             return;
         }
@@ -99,7 +99,7 @@ final class AdminController
             json_encode(['is_active' => $isActive], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         );
 
-        $_SESSION['success_admin'] = $isActive ? 'Utilisateur active.' : 'Utilisateur desactive.';
+        $_SESSION['success_admin'] = $isActive ? 'Utilisateur activé.' : 'Utilisateur désactivé.';
         $response->redirect('/admin');
     }
 
@@ -125,7 +125,7 @@ final class AdminController
         }
 
         $this->logs->create($adminId, 'post_deleted', 'post', $postId, null);
-        $_SESSION['success_admin'] = 'Post supprime.';
+        $_SESSION['success_admin'] = 'Post supprimé.';
         $response->redirect('/admin');
     }
 
@@ -151,7 +151,7 @@ final class AdminController
         }
 
         $this->logs->create($adminId, 'comment_deleted', 'comment', $commentId, null);
-        $_SESSION['success_admin'] = 'Commentaire supprime.';
+        $_SESSION['success_admin'] = 'Commentaire supprimé.';
         $response->redirect('/admin');
     }
 }

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Notifications</title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/notifications-index.css?v=20260314c">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/notifications-index.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
@@ -17,13 +17,13 @@
         <a class="notifications-backdrop__card notifications-backdrop__card--active" href="/">
           <span class="notifications-backdrop__eyebrow">Navigation rapide</span>
           <strong>Accueil</strong>
-          <p>Reviens sur le fil, les seances et les publications recentes.</p>
+          <p>Reviens sur le fil, les séances et les publications récentes.</p>
         </a>
 
         <a class="notifications-backdrop__card" href="/friends">
           <span class="notifications-backdrop__eyebrow">Raccourci</span>
           <strong>Amis</strong>
-          <p>Consulte tes demandes recues, les invitations envoyees et ton reseau.</p>
+          <p>Consulte tes demandes reçues, les invitations envoyées et ton réseau.</p>
         </a>
 
         <a class="notifications-backdrop__card" href="/posts">
@@ -35,7 +35,7 @@
         <a class="notifications-backdrop__card" href="/search">
           <span class="notifications-backdrop__eyebrow">Raccourci</span>
           <strong>Recherche</strong>
-          <p>Retrouve rapidement un pseudo, une publication ou un sujet precis.</p>
+          <p>Retrouve rapidement un pseudo, une publication ou un sujet précis.</p>
         </a>
 
         <div class="notifications-backdrop__stats">
@@ -44,7 +44,7 @@
             <strong><?= (int) $unreadCount ?></strong>
           </article>
           <article class="notifications-backdrop__stat">
-            <span>Total affiche</span>
+            <span>Total affiché</span>
             <strong><?= count($items) ?></strong>
           </article>
         </div>
@@ -55,7 +55,7 @@
           <div>
             <p class="notifications-sheet__eyebrow">Centre de notifications</p>
             <h1>Notifications</h1>
-            <p class="notifications-sheet__intro">Retrouve ici les interactions recentes et ouvre directement la bonne page.</p>
+            <p class="notifications-sheet__intro">Retrouve ici les interactions récentes et ouvre directement la bonne page.</p>
           </div>
 
           <div class="notifications-sheet__meta">
@@ -69,7 +69,7 @@
         <?php if (empty($items)): ?>
           <section class="notifications-empty">
             <h2>Aucune notification</h2>
-            <p>Ton centre de notifications se remplira des qu une interaction arrivera sur ton compte.</p>
+            <p>Ton centre de notifications se remplira dès qu’une interaction arrivera sur ton compte.</p>
           </section>
         <?php else: ?>
           <section class="notifications-list">
@@ -100,7 +100,7 @@
                         <?= htmlspecialchars((string) $n['actor_username'], ENT_QUOTES, 'UTF-8') ?>
                       </a>
                     <?php else: ?>
-                      <span>Acteur :</span> systeme
+                      <span>Acteur :</span> système
                     <?php endif; ?>
                   </p>
 

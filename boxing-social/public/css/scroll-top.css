@@ -13,7 +13,7 @@ html {
   height: 52px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  background: rgba(17, 20, 24, 0.92);
+  background: rgba(157, 44, 32, 0.94);
   color: #fff8ed;
   font-size: 24px;
   font-weight: 800;
@@ -34,8 +34,8 @@ html {
 
 .scroll-top:hover {
   transform: translateY(-2px);
-  background: rgba(196, 71, 50, 0.92);
-  border-color: rgba(196, 71, 50, 0.92);
+  background: rgba(127, 36, 27, 0.94);
+  border-color: rgba(127, 36, 27, 0.94);
 }
 
 @media (max-width: 640px) {

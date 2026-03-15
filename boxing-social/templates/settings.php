@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('settings_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/static-page.css?v=20260313n">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/static-page.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
@@ -72,6 +72,7 @@
             <button type="submit"><?= htmlspecialchars($t->text('settings_save'), ENT_QUOTES, 'UTF-8') ?></button>
           </div>
         </form>
+
       </div>
     </section>
   </main>

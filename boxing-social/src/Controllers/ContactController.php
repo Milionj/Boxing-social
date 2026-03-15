@@ -21,7 +21,7 @@ final class ContactController
 
     public function submit(Request $request, Response $response): void
     {
-        $_SESSION['errors_contact'] = ['Le formulaire contact utilise Firestore cote navigateur. Active JavaScript pour envoyer le message.'];
+        $_SESSION['errors_contact'] = ['Le formulaire de contact utilise Firestore côté navigateur. Active JavaScript pour envoyer le message.'];
         $response->redirect('/contact');
     }
 }

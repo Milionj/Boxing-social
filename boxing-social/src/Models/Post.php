@@ -20,7 +20,9 @@ final class Post
         string $postType,
         string $title,
         string $content,
-        ?string $imagePath,
+        ?string $mediaPath,
+        string $mediaType,
+        string $mediaSize,
         ?string $location,
         string $visibility = 'public',
         ?string $scheduledAt = null
@@ -29,8 +31,8 @@ final class Post
         // - une publication simple
         // - une declaration de seance d entrainement
         $stmt = $this->pdo->prepare(
-            'INSERT INTO posts (user_id, post_type, title, content, image_path, location, visibility, scheduled_at)
-             VALUES (:user_id, :post_type, :title, :content, :image_path, :location, :visibility, :scheduled_at)'
+            'INSERT INTO posts (user_id, post_type, title, content, image_path, media_type, media_size, location, visibility, scheduled_at)
+             VALUES (:user_id, :post_type, :title, :content, :image_path, :media_type, :media_size, :location, :visibility, :scheduled_at)'
         );
 
         return $stmt->execute([
@@ -38,7 +40,9 @@ final class Post
             'post_type' => $postType,
             'title' => $title !== '' ? $title : null,
             'content' => $content,
-            'image_path' => $imagePath,
+            'image_path' => $mediaPath,
+            'media_type' => $mediaType,
+            'media_size' => $mediaSize,
             'location' => $location !== '' ? $location : null,
             'visibility' => $visibility,
             'scheduled_at' => $scheduledAt,
@@ -55,6 +59,8 @@ final class Post
                 p.title,
                 p.content,
                 p.image_path,
+                p.media_type,
+                p.media_size,
                 p.location,
                 p.scheduled_at,
                 p.visibility,
@@ -78,10 +84,53 @@ final class Post
         return (int) $stmt->fetchColumn();
     }
 
+    public function latestByUserId(int $userId, int $limit = 20, int $offset = 0): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                p.id,
+                p.user_id,
+                p.post_type,
+                p.title,
+                p.content,
+                p.image_path,
+                p.media_type,
+                p.media_size,
+                p.location,
+                p.scheduled_at,
+                p.visibility,
+                p.created_at,
+                u.username
+             FROM posts p
+             INNER JOIN users u ON u.id = p.user_id
+             WHERE p.user_id = :user_id
+             ORDER BY p.created_at DESC
+             LIMIT :lim OFFSET :off'
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countByUserId(int $userId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*)
+             FROM posts
+             WHERE user_id = :user_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, user_id, post_type, title, content, image_path, location, scheduled_at, visibility, created_at
+            'SELECT id, user_id, post_type, title, content, image_path, media_type, media_size, location, scheduled_at, visibility, created_at
              FROM posts
              WHERE id = :id
              LIMIT 1'
@@ -102,6 +151,8 @@ final class Post
                 p.title,
                 p.content,
                 p.image_path,
+                p.media_type,
+                p.media_size,
                 p.location,
                 p.scheduled_at,
                 p.visibility,
@@ -124,6 +175,9 @@ final class Post
         string $postType,
         string $title,
         string $content,
+        ?string $mediaPath,
+        string $mediaType,
+        string $mediaSize,
         ?string $location,
         string $visibility,
         ?string $scheduledAt
@@ -133,6 +187,9 @@ final class Post
              SET post_type = :post_type,
                  title = :title,
                  content = :content,
+                 image_path = :image_path,
+                 media_type = :media_type,
+                 media_size = :media_size,
                  location = :location,
                  visibility = :visibility,
                  scheduled_at = :scheduled_at,
@@ -144,6 +201,9 @@ final class Post
             'post_type' => $postType,
             'title' => $title !== '' ? $title : null,
             'content' => $content,
+            'image_path' => $mediaPath,
+            'media_type' => $mediaType,
+            'media_size' => $mediaSize,
             'location' => $location !== '' ? $location : null,
             'visibility' => $visibility,
             'scheduled_at' => $scheduledAt,
@@ -288,7 +348,7 @@ public function deleteByAdmin(int $postId): bool
 public function latestPublicByUserId(int $userId, int $limit = 12, int $offset = 0): array
 {
     $stmt = $this->pdo->prepare(
-        'SELECT id, user_id, post_type, title, content, image_path, location, scheduled_at, visibility, created_at
+        'SELECT id, user_id, post_type, title, content, image_path, media_type, media_size, location, scheduled_at, visibility, created_at
          FROM posts
          WHERE user_id = :user_id AND visibility = :visibility
          ORDER BY created_at DESC

@@ -12,7 +12,7 @@
   border-radius: 24px;
   background:
     linear-gradient(180deg, rgba(34, 39, 45, 0.95), rgba(25, 29, 34, 0.94)),
-    radial-gradient(circle at top right, rgba(196, 71, 50, 0.16), transparent 32%);
+    radial-gradient(circle at top right, rgba(187, 73, 61, 0.16), transparent 32%);
   box-shadow: 0 22px 54px rgba(7, 9, 12, 0.18);
 }
 
@@ -81,7 +81,7 @@
   padding: 0 18px;
   border: 0;
   border-radius: 18px;
-  background: #c44732;
+  background: #9D2C20;
   color: #fff8f1;
   font: inherit;
   font-weight: 800;
@@ -92,7 +92,7 @@
 .search-form button:hover,
 .search-result-card button:hover,
 .search-open-post:hover {
-  background: #a93524;
+  background: #9D2C20;
 }
 
 .autocomplete-list {
@@ -122,7 +122,7 @@
 
 .autocomplete-item:hover,
 .autocomplete-item.is-active {
-  background: rgba(196, 71, 50, 0.18);
+  background: rgba(187, 73, 61, 0.18);
 }
 
 .search-shortcuts {
@@ -213,7 +213,7 @@
   width: 48px;
   height: 48px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #c44732, #7a291c);
+  background: linear-gradient(135deg, #BB493D, #9D2C20);
   color: #fff;
   font-size: 20px;
   font-weight: 800;
@@ -251,7 +251,8 @@
   margin-top: 14px;
 }
 
-.search-result-card--post img {
+.search-result-card--post img,
+.search-result-card--post video {
   display: block;
   width: 100%;
   height: 190px;

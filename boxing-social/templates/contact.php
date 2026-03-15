@@ -1,11 +1,13 @@
 <?php require dirname(__DIR__) . '/templates/partials/app-locale.php'; ?>
+<?php $isLoggedIn = isset($_SESSION['user']['id']); ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('contact_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/static-page.css?v=20260313m">
+  <link rel="stylesheet" href="/css/contact-public.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
   <script>
     window.BOXING_SOCIAL_FIREBASE_CONFIG = {
       apiKey: <?= json_encode((string) ($_ENV['FIREBASE_API_KEY'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
@@ -19,18 +21,37 @@
   </script>
   <script type="module" src="/js/contact-firestore.js"></script>
 </head>
-<body class="app-shell">
-  <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
-  <main class="static-page app-main">
-    <section class="static-hero">
+<body class="contact-public-page">
+  <main class="contact-public-shell">
+    <header class="contact-public-topbar">
+      <a class="contact-public-brand" href="/">
+        <img src="/img/Bonlogo.png" alt="Logo Boxing Social">
+        <span>
+          <strong>Boxing Social</strong>
+          <small>Communauté boxe</small>
+        </span>
+      </a>
+
+      <nav class="contact-public-nav" aria-label="Navigation publique">
+        <a href="/"><?= $isLoggedIn ? 'Retour à l’accueil' : 'Accueil' ?></a>
+        <a href="/privacy"><?= htmlspecialchars($t->text('nav_privacy'), ENT_QUOTES, 'UTF-8') ?></a>
+        <?php if (!$isLoggedIn): ?>
+          <a href="/login">Connexion</a>
+          <a class="contact-public-nav__cta" href="/register">Inscription</a>
+        <?php endif; ?>
+      </nav>
+    </header>
+
+    <section class="contact-public-hero">
+      <p class="contact-public-kicker"><?= htmlspecialchars($t->text('contact_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
       <h1><?= htmlspecialchars($t->text('contact_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
       <p><?= htmlspecialchars($t->text('contact_intro'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
 
-    <section class="static-card static-card--form">
-      <div class="static-card__head">
+    <section class="contact-public-card">
+      <div class="contact-public-card__head">
         <div>
-          <p class="static-card__eyebrow"><?= htmlspecialchars($t->text('contact_form_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
+          <p class="contact-public-card__eyebrow"><?= htmlspecialchars($t->text('contact_form_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
           <h2><?= htmlspecialchars($t->text('contact_form_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
           <p><?= htmlspecialchars($t->text('contact_form_intro'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
@@ -39,7 +60,7 @@
       <p class="msg-success" data-contact-success hidden></p>
       <p class="msg-error" data-contact-error hidden></p>
 
-      <form class="contact-form" method="post" action="/contact" data-contact-form>
+      <form class="contact-public-form" method="post" action="/contact" data-contact-form>
         <label>
           <?= htmlspecialchars($t->text('contact_email'), ENT_QUOTES, 'UTF-8') ?>
           <input type="email" name="email" placeholder="ton@email.com" value="<?= htmlspecialchars((string) ($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
@@ -62,9 +83,10 @@
         <button type="submit" data-contact-submit><?= htmlspecialchars($t->text('contact_send'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
 
-      <p class="contact-rights">&copy; <?= htmlspecialchars($t->text('footer_rights'), ENT_QUOTES, 'UTF-8') ?></p>
+      <p class="contact-public-rights">&copy; <?= htmlspecialchars($t->text('footer_rights'), ENT_QUOTES, 'UTF-8') ?></p>
     </section>
   </main>
-  <?php require dirname(__DIR__) . '/templates/partials/app-footer.php'; ?>
+  <?php require dirname(__DIR__) . '/templates/partials/cookie-notice.php'; ?>
+  <?php require dirname(__DIR__) . '/templates/partials/scroll-top.php'; ?>
 </body>
 </html>

@@ -2,32 +2,73 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connexion</title>
-  <link rel="stylesheet" href="/css/auth-login.css">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260314a">
+  <link rel="stylesheet" href="/css/auth.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
 </head>
-<body>
-  <main class="page">
-    <h1>Connexion</h1>
+<body class="auth-page">
+  <main class="auth-layout">
+    <section class="auth-panel auth-panel--brand">
+      <a class="auth-brand" href="/">
+        <img src="/img/Bonlogo.png" alt="Logo Boxing Social">
+        <span class="auth-brand__copy">
+          <strong>Boxing Social</strong>
+          <small>Communauté boxe</small>
+        </span>
+      </a>
 
-    <?php if (!empty($success)): ?>
-      <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+      <div class="auth-points">
+        <article>
+          <strong>Fil principal</strong>
+          <p>Retrouve rapidement les publications, les commentaires et les séances d’entraînement.</p>
+        </article>
+        <article>
+          <strong>Messagerie</strong>
+          <p>Reprends une conversation en cours ou rouvre un échange avec un membre.</p>
+        </article>
+      </div>
+    </section>
 
-    <?php if (!empty($errors)): ?>
-      <?php foreach ($errors as $error): ?>
-        <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-      <?php endforeach; ?>
-    <?php endif; ?>
+    <section class="auth-panel auth-panel--form">
+      <div class="auth-card-head">
+        <h2>Connexion</h2>
+        <p>Entre ton email et ton mot de passe pour accéder à ton espace.</p>
+      </div>
 
-    <form method="post" action="/login">
-      <input name="email" type="email" placeholder="Email" required value="<?= htmlspecialchars((string)($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-      <input name="password" type="password" placeholder="Mot de passe" required>
-      <button type="submit">Se connecter</button>
-    </form>
+      <?php if (!empty($success)): ?>
+        <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
+      <?php endif; ?>
 
-    <a class="link" href="/register">Creer un compte</a>
+      <?php if (!empty($errors)): ?>
+        <?php foreach ($errors as $error): ?>
+          <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <?php endforeach; ?>
+      <?php endif; ?>
+
+      <form class="auth-form" method="post" action="/login">
+        <label class="auth-field">
+          <span>Email</span>
+          <input name="email" type="email" placeholder="ton@email.com" required value="<?= htmlspecialchars((string)($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        </label>
+
+        <label class="auth-field">
+          <span>Mot de passe</span>
+          <input name="password" type="password" placeholder="Mot de passe" required>
+        </label>
+
+        <button type="submit">Se connecter</button>
+      </form>
+
+      <?php require dirname(__DIR__) . '/templates/partials/form-privacy-link.php'; ?>
+
+      <p class="auth-switch">
+        Pas encore de compte ?
+        <a href="/register">Créer un compte</a>
+      </p>
+    </section>
   </main>
+  <?php require dirname(__DIR__) . '/templates/partials/cookie-notice.php'; ?>
   <?php require dirname(__DIR__) . '/templates/partials/scroll-top.php'; ?>
 </body>
 </html>

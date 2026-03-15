@@ -57,7 +57,7 @@ final class SettingsController
         }
 
         if (!$this->settings->tableExists()) {
-            $_SESSION['errors_settings'] = ['La table user_settings est absente. Execute la migration SQL avant de sauvegarder les preferences.'];
+            $_SESSION['errors_settings'] = ['La table user_settings est absente. Exécute la migration SQL avant de sauvegarder les préférences.'];
             $response->redirect('/settings');
             return;
         }
@@ -70,7 +70,7 @@ final class SettingsController
         $errors = [];
 
         if (!in_array($theme, ['systeme', 'clair', 'sombre'], true)) {
-            $errors[] = $this->message($language, 'Theme invalide.', 'Invalid theme.');
+            $errors[] = $this->message($language, 'Thème invalide.', 'Invalid theme.');
         }
 
         if (!in_array($language, ['francais', 'anglais'], true)) {
@@ -78,7 +78,7 @@ final class SettingsController
         }
 
         if (!in_array($parentalControls, ['0', '1'], true)) {
-            $errors[] = $this->message($language, 'Valeur invalide pour les controles parentaux.', 'Invalid value for parental controls.');
+            $errors[] = $this->message($language, 'Valeur invalide pour les contrôles parentaux.', 'Invalid value for parental controls.');
         }
 
         if (!in_array($notificationsEnabled, ['0', '1'], true)) {
@@ -98,7 +98,7 @@ final class SettingsController
             'notifications_enabled' => (int) $notificationsEnabled,
         ]);
 
-        $_SESSION['success_settings'] = $this->message($language, 'Parametres mis a jour.', 'Settings updated.');
+        $_SESSION['success_settings'] = $this->message($language, 'Paramètres mis à jour.', 'Settings updated.');
         $response->redirect('/settings');
     }
 }

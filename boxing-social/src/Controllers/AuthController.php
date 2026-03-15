@@ -56,7 +56,7 @@ final class AuthController
 
         // Règles pseudo : longueur + caractères autorisés
         if ($username === '' || strlen($username) < 3 || strlen($username) > 30) {
-            $errors[] = 'Le pseudo doit contenir entre 3 et 30 caracteres.';
+            $errors[] = 'Le pseudo doit contenir entre 3 et 30 caractères.';
         }
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
             $errors[] = 'Le pseudo ne doit contenir que lettres, chiffres et underscore.';
@@ -69,7 +69,7 @@ final class AuthController
 
         // Règles mot de passe : longueur + complexité
         if (strlen($password) < 8) {
-            $errors[] = 'Le mot de passe doit contenir au moins 8 caracteres.';
+            $errors[] = 'Le mot de passe doit contenir au moins 8 caractères.';
         }
         if (
             !preg_match('/[A-Z]/', $password) ||
@@ -87,10 +87,10 @@ final class AuthController
         // Vérifications DB : unicité username/email
         // (On le fait après les validations basiques pour éviter des requêtes inutiles)
         if ($this->auth->usernameExists($username)) {
-            $errors[] = 'Ce pseudo est deja utilise.';
+            $errors[] = 'Ce pseudo est déjà utilisé.';
         }
         if ($this->auth->emailExists($email)) {
-            $errors[] = 'Cet email est deja utilise.';
+            $errors[] = 'Cet email est déjà utilisé.';
         }
 
         // Si erreurs : on stocke et on redirige vers le formulaire
@@ -108,7 +108,7 @@ final class AuthController
         $this->auth->register($username, $email, $password);
 
         // Message flash pour la page login
-        $_SESSION['success'] = 'Compte cree. Vous pouvez vous connecter.';
+        $_SESSION['success'] = 'Compte créé. Vous pouvez vous connecter.';
 
         $response->redirect('/login');
     }

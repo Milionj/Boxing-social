@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('public_profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/public-profile.css?v=20260314c">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/public-profile.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
@@ -81,7 +81,13 @@
                     <p class="public-post-card__meta"><?= htmlspecialchars((string) $post['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
                   </div>
                   <?php if (!empty($post['image_path'])): ?>
-                    <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
+                    <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+                      <video controls preload="metadata">
+                        <source src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>">
+                      </video>
+                    <?php else: ?>
+                      <img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
                   <?php endif; ?>
                 </article>
               <?php endforeach; ?>

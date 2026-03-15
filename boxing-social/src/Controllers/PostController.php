@@ -7,13 +7,17 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Models\Post;
 use App\Models\Comment;
+use App\Models\Friendship;
 use App\Models\Message;
 use App\Models\Notification;
 
 final class PostController
 {
+    private const MIN_CONTENT_LENGTH = 5;
+
     private Post $posts;
     private Comment $comments;
+    private Friendship $friendships;
     private Message $messages;
     private Notification $notifications;
 
@@ -21,6 +25,7 @@ final class PostController
     {
         $this->posts = new Post();
         $this->comments = new Comment();
+        $this->friendships = new Friendship();
         $this->messages = new Message();
         $this->notifications = new Notification();
     }
@@ -48,28 +53,209 @@ final class PostController
 
     private function buildTrainingInterestMessage(array $post, string $username): string
     {
-        // Message automatique envoye a l'annonceur quand quelqu'un
-        // manifeste son interet sur une seance d entrainement.
+        // Message automatique envoyé à l'annonceur quand quelqu'un
+        // manifeste son intérêt sur une séance d'entraînement.
         $title = trim((string) ($post['title'] ?? ''));
-        $sessionLabel = $title !== '' ? $title : 'seance sans titre';
+        $sessionLabel = $title !== '' ? $title : 'séance sans titre';
 
         return sprintf(
-            '%s a manifeste son interet pour votre seance "%s".',
+            '%s a manifesté son intérêt pour votre séance "%s".',
             $username,
             $sessionLabel
         );
     }
 
+    private function normalizeMediaSize(string $mediaSize): string
+    {
+        return in_array($mediaSize, ['compact', 'standard', 'large'], true) ? $mediaSize : 'standard';
+    }
+
+    private function contentLength(string $content): int
+    {
+        return function_exists('mb_strlen') ? mb_strlen($content) : strlen($content);
+    }
+
+    private function parseIniSizeToBytes(string $value): int
+    {
+        $normalized = trim($value);
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($normalized, -1));
+        $amount = (float) $normalized;
+
+        return match ($unit) {
+            'g' => (int) ($amount * 1024 * 1024 * 1024),
+            'm' => (int) ($amount * 1024 * 1024),
+            'k' => (int) ($amount * 1024),
+            default => (int) $amount,
+        };
+    }
+
+    private function requestExceedsPostMaxSize(): bool
+    {
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $postMaxSize = $this->parseIniSizeToBytes((string) ini_get('post_max_size'));
+
+        return $contentLength > 0 && $postMaxSize > 0 && $contentLength > $postMaxSize;
+    }
+
+    private function editRedirectTarget(Request $request, int $fallbackPostId = 0): string
+    {
+        if ($fallbackPostId > 0) {
+            return '/posts/edit?id=' . $fallbackPostId;
+        }
+
+        $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+        $path = (string) (parse_url($referer, PHP_URL_PATH) ?? '');
+        $query = (string) (parse_url($referer, PHP_URL_QUERY) ?? '');
+
+        if ($path === '/posts/edit' && $query !== '') {
+            parse_str($query, $params);
+            $refererPostId = isset($params['id']) ? (int) $params['id'] : 0;
+            if ($refererPostId > 0) {
+                return '/posts/edit?id=' . $refererPostId;
+            }
+        }
+
+        $requestPostId = (int) $request->input('id', 0);
+        if ($requestPostId > 0) {
+            return '/posts/edit?id=' . $requestPostId;
+        }
+
+        return '/posts';
+    }
+
+    private function extractPostFormData(Request $request): array
+    {
+        $postType = (string) $request->input('post_type', 'publication');
+        $visibility = (string) $request->input('visibility', 'public');
+
+        return [
+            'post_type' => in_array($postType, ['publication', 'entrainement'], true) ? $postType : 'publication',
+            'title' => trim((string) $request->input('title', '')),
+            'content' => trim((string) $request->input('content', '')),
+            'location' => trim((string) $request->input('location', '')),
+            'visibility' => in_array($visibility, ['public', 'friends', 'private'], true) ? $visibility : 'public',
+            'scheduled_at' => trim((string) $request->input('scheduled_at', '')),
+            'media_size' => $this->normalizeMediaSize((string) $request->input('media_size', 'standard')),
+            'remove_media' => (string) $request->input('remove_media', '') === '1',
+        ];
+    }
+
+    private function deleteLocalPostMedia(?string $mediaPath): void
+    {
+        if ($mediaPath === null || $mediaPath === '' || !str_starts_with($mediaPath, '/uploads/posts/')) {
+            return;
+        }
+
+        $publicDir = realpath(dirname(__DIR__, 2) . '/public');
+        $uploadsDir = realpath(dirname(__DIR__, 2) . '/public/uploads/posts');
+        if ($publicDir === false || $uploadsDir === false) {
+            return;
+        }
+
+        $absolutePath = realpath($publicDir . $mediaPath);
+        if ($absolutePath === false || !is_file($absolutePath)) {
+            return;
+        }
+
+        if (!str_starts_with($absolutePath, $uploadsDir . DIRECTORY_SEPARATOR)) {
+            return;
+        }
+
+        @unlink($absolutePath);
+    }
+
+    private function handleUploadedMedia(int $userId, array &$errors): array
+    {
+        if (
+            !isset($_FILES['post_media'])
+            || !is_array($_FILES['post_media'])
+            || ($_FILES['post_media']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE
+        ) {
+            return ['provided' => false, 'path' => null, 'type' => 'image'];
+        }
+
+        $file = $_FILES['post_media'];
+
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_INI_SIZE) {
+            $errors[] = sprintf(
+                'Le fichier dépasse la limite serveur actuelle (%s max par fichier).',
+                (string) ini_get('upload_max_filesize')
+            );
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $errors[] = 'Erreur lors de l’envoi du média.';
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        $tmpPath = (string) ($file['tmp_name'] ?? '');
+        $mime = mime_content_type($tmpPath) ?: '';
+        $size = (int) ($file['size'] ?? 0);
+
+        $allowedMimes = [
+            'image/jpeg' => ['ext' => 'jpg', 'type' => 'image', 'max' => 8 * 1024 * 1024],
+            'image/png' => ['ext' => 'png', 'type' => 'image', 'max' => 8 * 1024 * 1024],
+            'image/webp' => ['ext' => 'webp', 'type' => 'image', 'max' => 8 * 1024 * 1024],
+            'image/gif' => ['ext' => 'gif', 'type' => 'gif', 'max' => 12 * 1024 * 1024],
+            'video/mp4' => ['ext' => 'mp4', 'type' => 'video', 'max' => 25 * 1024 * 1024],
+            'video/webm' => ['ext' => 'webm', 'type' => 'video', 'max' => 25 * 1024 * 1024],
+        ];
+
+        if (!isset($allowedMimes[$mime])) {
+            $errors[] = 'Format non autorisé. Utilisez JPG, PNG, WEBP, GIF, MP4 ou WEBM.';
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        if ($size > $allowedMimes[$mime]['max']) {
+            $errors[] = $allowedMimes[$mime]['type'] === 'video'
+                ? 'Vidéo trop volumineuse (max 25 Mo).'
+                : 'Média trop volumineux.';
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        $ext = $allowedMimes[$mime]['ext'];
+        $type = $allowedMimes[$mime]['type'];
+        $name = 'post_' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/posts';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            $errors[] = 'Impossible de créer le dossier des médias.';
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        $target = $uploadDir . '/' . $name;
+        if (!move_uploaded_file($tmpPath, $target)) {
+            $errors[] = 'Impossible de déplacer le média.';
+            return ['provided' => true, 'path' => null, 'type' => 'image'];
+        }
+
+        return [
+            'provided' => true,
+            'path' => '/uploads/posts/' . $name,
+            'type' => $type,
+        ];
+    }
+
     public function index(Request $request, Response $response): void
     {
+        $currentUserId = $this->requireAuth($response);
+        if ($currentUserId === null) {
+            return;
+        }
+
         $perPage = 8;
         $currentPage = max(1, (int) $request->input('page', 1));
-        $totalPosts = $this->posts->feedCount();
+        $totalPosts = $this->posts->countByUserId($currentUserId);
         $totalPages = max(1, (int) ceil($totalPosts / $perPage));
         $currentPage = min($currentPage, $totalPages);
         $offset = ($currentPage - 1) * $perPage;
 
-        $feed = $this->posts->latestFeed($perPage, $offset);
+        $feed = $this->posts->latestByUserId($currentUserId, $perPage, $offset);
         $commentsByPost = [];
         foreach ($feed as $post) {
             $postId = (int) $post['id'];
@@ -81,7 +267,7 @@ final class PostController
         $interestCountByPost = [];
         $interestedByCurrentUser = [];
 
-        $currentUserId = $_SESSION['user']['id'] ?? null;
+        $quickFriends = [];
         foreach ($feed as $post) {
             $postId = (int) $post['id'];
             $likesCountByPost[$postId] = $this->posts->likesCountByPostId($postId);
@@ -95,6 +281,8 @@ final class PostController
                 $interestedByCurrentUser[$postId] = false;
             }
         }
+
+        $quickFriends = array_slice($this->friendships->friendsOf($currentUserId), 0, 10);
 
         require dirname(__DIR__, 2) . '/templates/posts/index.php';
 
@@ -169,7 +357,7 @@ final class PostController
                 $userId,
                 'like',
                 $postId,
-                'Votre post a recu un like.'
+                'Votre post a reçu un like.'
             );
         }
 
@@ -191,25 +379,25 @@ final class PostController
 
         $post = $this->posts->findDetailedById($postId);
         if ($post === null) {
-            $_SESSION['errors_posts_interest'] = ['Seance introuvable.'];
+            $_SESSION['errors_posts_interest'] = ['Séance introuvable.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         if (($post['post_type'] ?? 'publication') !== 'entrainement') {
-            $_SESSION['errors_posts_interest'] = ['Cette action est reservee aux declarations de seances.'];
+            $_SESSION['errors_posts_interest'] = ['Cette action est réservée aux déclarations de séances.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         if ((int) $post['user_id'] === $userId) {
-            $_SESSION['errors_posts_interest'] = ['Vous ne pouvez pas manifester votre interet sur votre propre seance.'];
+            $_SESSION['errors_posts_interest'] = ['Vous ne pouvez pas manifester votre intérêt sur votre propre séance.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         if ($this->posts->hasInterestByUser($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez deja manifeste votre interet pour cette seance.'];
+            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
@@ -218,13 +406,13 @@ final class PostController
         $content = $this->buildTrainingInterestMessage($post, $username);
 
         if (!$this->posts->addInterest($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez deja manifeste votre interet pour cette seance.'];
+            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
 
         if (!$this->messages->send($userId, (int) $post['user_id'], $content)) {
-            $_SESSION['errors_posts_interest'] = ['Impossible d envoyer votre interet pour le moment.'];
+            $_SESSION['errors_posts_interest'] = ['Impossible d’envoyer votre intérêt pour le moment.'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
@@ -234,10 +422,10 @@ final class PostController
             $userId,
             'message',
             null,
-            'Un utilisateur a manifeste son interet pour votre seance.'
+            'Un utilisateur a manifesté son intérêt pour votre séance.'
         );
 
-        $_SESSION['success_posts_interest'] = 'Votre interet a ete envoye a l annonceur.';
+        $_SESSION['success_posts_interest'] = 'Votre intérêt a été envoyé à l’annonceur.';
         $this->redirectBack($request, $response, '/posts');
     }
 
@@ -252,7 +440,7 @@ final class PostController
         $content = trim((string) $request->input('content', ''));
 
         if ($postId <= 0 || strlen($content) < 2) {
-            $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caracteres).'];
+            $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caractères).'];
             $this->redirectBack($request, $response, '/posts');
             return;
         }
@@ -306,7 +494,17 @@ public function deleteComment(Request $request, Response $response): void
 
         $errors = $_SESSION['errors_posts'] ?? [];
         $success = $_SESSION['success_posts'] ?? '';
-        unset($_SESSION['errors_posts'], $_SESSION['success_posts']);
+        $formData = $_SESSION['old_posts'] ?? [
+            'post_type' => 'publication',
+            'title' => '',
+            'content' => '',
+            'location' => '',
+            'visibility' => 'public',
+            'scheduled_at' => '',
+            'media_size' => 'standard',
+            'remove_media' => false,
+        ];
+        unset($_SESSION['errors_posts'], $_SESSION['success_posts'], $_SESSION['old_posts']);
 
         require dirname(__DIR__, 2) . '/templates/posts/create.php';
     }
@@ -318,12 +516,25 @@ public function deleteComment(Request $request, Response $response): void
             return;
         }
 
-        $postType = (string) $request->input('post_type', 'publication');
-        $title = trim((string) $request->input('title', ''));
-        $content = trim((string) $request->input('content', ''));
-        $location = trim((string) $request->input('location', ''));
-        $visibility = (string) $request->input('visibility', 'public');
-        $scheduledAt = trim((string) $request->input('scheduled_at', ''));
+        if ($this->requestExceedsPostMaxSize()) {
+            $_SESSION['errors_posts'] = [
+                sprintf(
+                    'La vidéo dépasse la limite serveur actuelle (%s max par requête). Réduisez le fichier ou augmentez post_max_size / upload_max_filesize dans PHP.',
+                    (string) ini_get('post_max_size')
+                ),
+            ];
+            $response->redirect('/posts/create');
+            return;
+        }
+
+        $formData = $this->extractPostFormData($request);
+        $postType = $formData['post_type'];
+        $title = $formData['title'];
+        $content = $formData['content'];
+        $location = $formData['location'];
+        $visibility = $formData['visibility'];
+        $scheduledAt = $formData['scheduled_at'];
+        $mediaSize = $formData['media_size'];
 
         $allowedTypes = ['publication', 'entrainement'];
         $allowedVisibility = ['public', 'friends', 'private'];
@@ -333,8 +544,8 @@ public function deleteComment(Request $request, Response $response): void
             $errors[] = 'Type de post invalide.';
         }
 
-        if ($content === '' || strlen($content) < 5) {
-            $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
+        if ($content === '' || $this->contentLength($content) < self::MIN_CONTENT_LENGTH) {
+            $errors[] = sprintf('Le contenu doit contenir au moins %d caractères.', self::MIN_CONTENT_LENGTH);
         }
 
         if (!in_array($visibility, $allowedVisibility, true)) {
@@ -344,68 +555,38 @@ public function deleteComment(Request $request, Response $response): void
         $normalizedScheduledAt = null;
         if ($postType === 'entrainement') {
             if ($scheduledAt === '') {
-                $errors[] = 'Une seance d entrainement doit avoir une date et une heure.';
+                $errors[] = 'Une séance d’entraînement doit avoir une date et une heure.';
             } else {
                 $timestamp = strtotime($scheduledAt);
                 if ($timestamp === false) {
-                    $errors[] = 'Date de seance invalide.';
+                    $errors[] = 'Date de séance invalide.';
                 } else {
                     $normalizedScheduledAt = date('Y-m-d H:i:s', $timestamp);
                 }
             }
         }
 
-        $imagePath = null;
-
-        if (isset($_FILES['post_image']) && is_array($_FILES['post_image']) && ($_FILES['post_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-            $file = $_FILES['post_image'];
-
-            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-                $errors[] = 'Erreur upload image.';
-            } else {
-                $maxSize = 4 * 1024 * 1024; // 4MB
-                if (($file['size'] ?? 0) > $maxSize) {
-                    $errors[] = 'Image trop volumineuse (max 4MB).';
-                } else {
-                    $tmpPath = (string) ($file['tmp_name'] ?? '');
-                    $mime = mime_content_type($tmpPath) ?: '';
-
-                    $allowedMimes = [
-                        'image/jpeg' => 'jpg',
-                        'image/png' => 'png',
-                        'image/webp' => 'webp',
-                    ];
-
-                    if (!isset($allowedMimes[$mime])) {
-                        $errors[] = 'Format image non autorise (JPG, PNG, WEBP).';
-                    } else {
-                        $ext = $allowedMimes[$mime];
-                        $name = 'post_' . $userId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
-
-                        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/posts';
-                        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-                            $errors[] = 'Impossible de creer le dossier upload posts.';
-                        } else {
-                            $target = $uploadDir . '/' . $name;
-                            if (!move_uploaded_file($tmpPath, $target)) {
-                                $errors[] = 'Impossible de deplacer l image.';
-                            } else {
-                                $imagePath = '/uploads/posts/' . $name;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        $uploadedMedia = $this->handleUploadedMedia($userId, $errors);
+        $mediaPath = $uploadedMedia['path'];
+        $mediaType = $uploadedMedia['type'];
 
         if ($errors !== []) {
             $_SESSION['errors_posts'] = $errors;
+            $_SESSION['old_posts'] = $formData;
             $response->redirect('/posts/create');
             return;
         }
 
-        $this->posts->create($userId, $postType, $title, $content, $imagePath, $location, $visibility, $normalizedScheduledAt);
-        $_SESSION['success_posts'] = 'Post cree avec succes.';
+        $created = $this->posts->create($userId, $postType, $title, $content, $mediaPath, $mediaType, $mediaSize, $location, $visibility, $normalizedScheduledAt);
+        if (!$created) {
+            $this->deleteLocalPostMedia($mediaPath);
+            $_SESSION['errors_posts'] = ['Impossible d’enregistrer le post.'];
+            $_SESSION['old_posts'] = $formData;
+            $response->redirect('/posts/create');
+            return;
+        }
+
+        $_SESSION['success_posts'] = 'Post créé avec succès.';
         $response->redirect('/posts');
     }
     public function editForm(Request $request, Response $response): void
@@ -428,7 +609,22 @@ public function deleteComment(Request $request, Response $response): void
     }
 
     $errors = $_SESSION['errors_posts_edit'] ?? [];
-    unset($_SESSION['errors_posts_edit']);
+    $old = $_SESSION['old_posts_edit'] ?? [];
+    $formData = [
+        'post_type' => (string) ($post['post_type'] ?? 'publication'),
+        'title' => (string) ($post['title'] ?? ''),
+        'content' => (string) ($post['content'] ?? ''),
+        'location' => (string) ($post['location'] ?? ''),
+        'visibility' => (string) ($post['visibility'] ?? 'public'),
+        'scheduled_at' => !empty($post['scheduled_at']) ? date('Y-m-d\TH:i', strtotime((string) $post['scheduled_at'])) : '',
+        'media_size' => (string) ($post['media_size'] ?? 'standard'),
+        'remove_media' => false,
+    ];
+    if (is_array($old)) {
+        $formData = array_merge($formData, $old);
+    }
+
+    unset($_SESSION['errors_posts_edit'], $_SESSION['old_posts_edit']);
 
     require dirname(__DIR__, 2) . '/templates/posts/edit.php';
 }
@@ -441,13 +637,27 @@ public function update(Request $request, Response $response): void
         return;
     }
 
+    if ($this->requestExceedsPostMaxSize()) {
+        $_SESSION['errors_posts_edit'] = [
+            sprintf(
+                'La vidéo dépasse la limite serveur actuelle (%s max par requête). Réduisez le fichier ou augmentez post_max_size / upload_max_filesize dans PHP.',
+                (string) ini_get('post_max_size')
+            ),
+        ];
+        $response->redirect($this->editRedirectTarget($request));
+        return;
+    }
+
     $postId = (int) $request->input('id', 0);
-    $postType = (string) $request->input('post_type', 'publication');
-    $title = trim((string) $request->input('title', ''));
-    $content = trim((string) $request->input('content', ''));
-    $location = trim((string) $request->input('location', ''));
-    $visibility = (string) $request->input('visibility', 'public');
-    $scheduledAt = trim((string) $request->input('scheduled_at', ''));
+    $formData = $this->extractPostFormData($request);
+    $postType = $formData['post_type'];
+    $title = $formData['title'];
+    $content = $formData['content'];
+    $location = $formData['location'];
+    $visibility = $formData['visibility'];
+    $scheduledAt = $formData['scheduled_at'];
+    $mediaSize = $formData['media_size'];
+    $removeMedia = $formData['remove_media'];
 
     $errors = [];
     if ($postId <= 0) {
@@ -456,8 +666,8 @@ public function update(Request $request, Response $response): void
     if (!in_array($postType, ['publication', 'entrainement'], true)) {
         $errors[] = 'Type de post invalide.';
     }
-    if ($content === '' || strlen($content) < 5) {
-        $errors[] = 'Le contenu doit contenir au moins 5 caracteres.';
+    if ($content === '' || $this->contentLength($content) < self::MIN_CONTENT_LENGTH) {
+        $errors[] = sprintf('Le contenu doit contenir au moins %d caractères.', self::MIN_CONTENT_LENGTH);
     }
     if (!in_array($visibility, ['public', 'friends', 'private'], true)) {
         $errors[] = 'Visibilite invalide.';
@@ -466,11 +676,11 @@ public function update(Request $request, Response $response): void
     $normalizedScheduledAt = null;
     if ($postType === 'entrainement') {
         if ($scheduledAt === '') {
-            $errors[] = 'Une seance d entrainement doit avoir une date et une heure.';
+            $errors[] = 'Une séance d’entraînement doit avoir une date et une heure.';
         } else {
             $timestamp = strtotime($scheduledAt);
             if ($timestamp === false) {
-                $errors[] = 'Date de seance invalide.';
+                $errors[] = 'Date de séance invalide.';
             } else {
                 $normalizedScheduledAt = date('Y-m-d H:i:s', $timestamp);
             }
@@ -484,11 +694,52 @@ public function update(Request $request, Response $response): void
 
     if ($errors !== []) {
         $_SESSION['errors_posts_edit'] = $errors;
+        $_SESSION['old_posts_edit'] = $formData;
         $response->redirect('/posts/edit?id=' . $postId);
         return;
     }
 
-    $this->posts->updateByOwner($postId, $userId, $postType, $title, $content, $location, $visibility, $normalizedScheduledAt);
+    $uploadedMedia = $this->handleUploadedMedia($userId, $errors);
+    $currentMediaPath = isset($post['image_path']) ? (string) $post['image_path'] : null;
+    $currentMediaType = (string) ($post['media_type'] ?? 'image');
+    $hasReplacement = ($uploadedMedia['provided'] ?? false) && ($uploadedMedia['path'] ?? null) !== null;
+
+    $mediaPath = $currentMediaPath;
+    $mediaType = $currentMediaType;
+
+    if ($removeMedia && !$hasReplacement) {
+        $mediaPath = null;
+        $mediaType = 'image';
+    }
+
+    if ($hasReplacement) {
+        $mediaPath = $uploadedMedia['path'];
+        $mediaType = $uploadedMedia['type'];
+    }
+
+    if ($errors !== []) {
+        $_SESSION['errors_posts_edit'] = $errors;
+        $_SESSION['old_posts_edit'] = $formData;
+        $response->redirect('/posts/edit?id=' . $postId);
+        return;
+    }
+
+    $updated = $this->posts->updateByOwner($postId, $userId, $postType, $title, $content, $mediaPath, $mediaType, $mediaSize, $location, $visibility, $normalizedScheduledAt);
+    if (!$updated) {
+        if ($hasReplacement) {
+            $this->deleteLocalPostMedia($mediaPath);
+        }
+
+        $_SESSION['errors_posts_edit'] = ['Impossible de mettre à jour le post.'];
+        $_SESSION['old_posts_edit'] = $formData;
+        $response->redirect('/posts/edit?id=' . $postId);
+        return;
+    }
+
+    if (($removeMedia && !$hasReplacement) || ($hasReplacement && $currentMediaPath !== null && $currentMediaPath !== $mediaPath)) {
+        $this->deleteLocalPostMedia($currentMediaPath);
+    }
+
     $response->redirect('/posts');
 }
 

@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('messages_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/messages-index.css?v=20260313l">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/messages-index.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>

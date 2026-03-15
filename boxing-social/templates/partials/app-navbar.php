@@ -114,7 +114,7 @@ $topbarTitle = match (true) {
         <span class="app-nav__brand-mark">B</span>
         <span class="app-nav__brand-copy">
           <strong>Boxing Social</strong>
-          <small>Communaute boxe</small>
+          <small>Communauté boxe</small>
         </span>
       </a>
     </div>

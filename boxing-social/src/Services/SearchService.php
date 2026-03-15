@@ -34,7 +34,7 @@ final class SearchService
     public function searchPosts(string $query, int $limit = 20): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT p.id, p.title, p.content, p.image_path, p.created_at, u.username
+            'SELECT p.id, p.title, p.content, p.image_path, p.media_type, p.media_size, p.created_at, u.username
              FROM posts p
              INNER JOIN users u ON u.id = p.user_id
              WHERE p.title LIKE :query_title

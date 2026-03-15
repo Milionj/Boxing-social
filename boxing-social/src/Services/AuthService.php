@@ -102,7 +102,19 @@ public function updatePassword(int $userId, string $newPassword): bool
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $param = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $param['path'], $param['domain'], $param['secure'], $param['httponly']);
+            $options = [
+                'expires' => time() - 42000,
+                'path' => $param['path'] ?? '/',
+                'secure' => (bool) ($param['secure'] ?? false),
+                'httponly' => (bool) ($param['httponly'] ?? true),
+                'samesite' => $param['samesite'] ?? 'Lax',
+            ];
+
+            if (!empty($param['domain'])) {
+                $options['domain'] = $param['domain'];
+            }
+
+            setcookie(session_name(), '', $options);
         }
         session_destroy();
     }

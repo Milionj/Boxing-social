@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('post_show_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/post-show.css?v=20260314e">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/post-show.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
@@ -19,14 +19,16 @@
     <article class="post-show-card <?= $isTrainingPost ? 'post-show-card--training' : 'post-show-card--publication' ?>">
       <div class="post-show-card__header">
         <span class="post-show-card__type"><?= htmlspecialchars($isTrainingPost ? $t->text('posts_type_training') : $t->text('posts_type_publication'), ENT_QUOTES, 'UTF-8') ?></span>
-        <span class="post-show-card__meta"><?= htmlspecialchars((string) $post['created_at'], ENT_QUOTES, 'UTF-8') ?> | <?= htmlspecialchars((string) $post['visibility'], ENT_QUOTES, 'UTF-8') ?></span>
+        <div class="post-show-card__meta-wrap">
+          <span class="post-show-card__meta"><?= htmlspecialchars((string) $post['created_at'], ENT_QUOTES, 'UTF-8') ?></span>
+          <span class="post-show-card__visibility"><?= htmlspecialchars((string) $post['visibility'], ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
       </div>
 
       <?php if ($isTrainingPost): ?>
         <section class="post-show-card__training-banner">
           <div class="post-show-card__training-head">
             <p class="post-show-card__training-label"><?= htmlspecialchars($t->text('training_session_label'), ENT_QUOTES, 'UTF-8') ?></p>
-            <p class="post-show-card__training-intro"><?= htmlspecialchars($t->text('training_interest_intro'), ENT_QUOTES, 'UTF-8') ?></p>
           </div>
 
           <div class="post-show-card__training-grid">
@@ -51,10 +53,16 @@
         <div class="post-show-card__copy">
           <div class="post-show-card__facts">
             <?php if (!$isTrainingPost && !empty($post['location'])): ?>
-              <p><strong><?= htmlspecialchars($t->text('post_location'), ENT_QUOTES, 'UTF-8') ?> :</strong> <?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></p>
+              <article class="post-show-card__fact-item">
+                <span><?= htmlspecialchars($t->text('post_location'), ENT_QUOTES, 'UTF-8') ?></span>
+                <strong><?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></strong>
+              </article>
             <?php endif; ?>
             <?php if (!$isTrainingPost && !empty($post['scheduled_at'])): ?>
-              <p><strong>Seance prevue :</strong> <?= htmlspecialchars((string) $post['scheduled_at'], ENT_QUOTES, 'UTF-8') ?></p>
+              <article class="post-show-card__fact-item">
+                <span>Séance prévue</span>
+                <strong><?= htmlspecialchars((string) $post['scheduled_at'], ENT_QUOTES, 'UTF-8') ?></strong>
+              </article>
             <?php endif; ?>
           </div>
 
@@ -63,16 +71,25 @@
           </div>
         </div>
 
-        <?php if (!empty($post['image_path'])): ?>
-          <div class="post-show-card__media">
-            <img class="hero-image" src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
-          </div>
-        <?php endif; ?>
+        <?php $mediaSize = htmlspecialchars((string) ($post['media_size'] ?? 'standard'), ENT_QUOTES, 'UTF-8'); ?>
+        <div class="post-show-card__media post-show-card__media--<?= $mediaSize ?>">
+          <?php if (!empty($post['image_path'])): ?>
+            <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
+              <video class="hero-image" controls preload="metadata">
+                <source src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>">
+              </video>
+            <?php else: ?>
+              <img class="hero-image" src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
+            <?php endif; ?>
+          <?php else: ?>
+            <div class="hero-image hero-image--placeholder">BOXING SOCIAL</div>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="post-show-card__actions">
         <div class="actions">
-          <p class="post-show-card__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?> :</strong> <?= $likesCount ?></p>
+          <p class="post-show-card__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?></strong><span><?= $likesCount ?></span></p>
           <?php if ($currentUserId !== null): ?>
             <form method="post" action="/likes/toggle">
               <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
@@ -87,7 +104,7 @@
             <div class="post-show-card__training-cta-copy">
               <p class="post-show-card__training-cta-title"><?= htmlspecialchars($t->text('training_interest_label'), ENT_QUOTES, 'UTF-8') ?></p>
               <p class="post-show-card__training-cta-text">
-                <?= htmlspecialchars($isInterested ? $t->text('training_interest_sent') : $t->text('training_interest_intro'), ENT_QUOTES, 'UTF-8') ?>
+                <?= htmlspecialchars($isInterested ? $t->text('training_interest_sent') : $t->text('training_interest_action'), ENT_QUOTES, 'UTF-8') ?>
               </p>
             </div>
 

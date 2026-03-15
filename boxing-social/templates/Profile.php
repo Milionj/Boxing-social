@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260314b">
-  <link rel="stylesheet" href="/css/profile.css?v=20260313i">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/profile.css?v=20260315i">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
@@ -90,6 +90,7 @@
               <button type="submit"><?= htmlspecialchars($t->text('profile_save'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
           </form>
+
         </section>
 
         <section class="card profile-card">
@@ -119,6 +120,7 @@
               <button type="submit"><?= htmlspecialchars($t->text('profile_avatar_update'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
           </form>
+
         </section>
 
         <section class="card profile-card">
@@ -152,10 +154,11 @@
               <input type="password" name="confirm_password" required>
             </label>
             <div class="profile-form__footer">
-              <small>8 caracteres minimum, avec majuscule, minuscule et chiffre.</small>
+              <small>8 caractères minimum, avec majuscule, minuscule et chiffre.</small>
               <button type="submit"><?= htmlspecialchars($t->text('profile_password_update'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
           </form>
+
         </section>
       </div>
     </div>

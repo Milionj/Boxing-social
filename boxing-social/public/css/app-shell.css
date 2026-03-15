@@ -14,8 +14,8 @@ html {
   --shell-text-soft: #cfc6b8;
   --shell-text-muted: #9f988d;
   --shell-ink: #171a1d;
-  --shell-accent: #c44732;
-  --shell-accent-strong: #a93524;
+  --shell-accent: #9D2C20;
+  --shell-accent-strong: #7f241b;
   --shell-line: rgba(255, 255, 255, 0.08);
   --shell-shadow: 0 24px 64px rgba(5, 7, 10, 0.28);
 }
@@ -148,7 +148,7 @@ body.app-shell::before {
   margin-bottom: 18px;
   padding: 14px 18px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--shell-accent), #d05943);
+  background: var(--shell-accent);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
@@ -423,8 +423,8 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
   justify-content: center;
   border: 1px solid var(--shell-line);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--shell-text);
+  background: var(--shell-accent);
+  color: #fff;
   font: inherit;
   font-size: 24px;
   cursor: pointer;
@@ -445,7 +445,7 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
   min-height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(196, 71, 50, 0.16);
+  background: rgba(187, 73, 61, 0.16);
   color: #ffd8d1;
   font-size: 13px;
   font-weight: 800;
@@ -475,8 +475,16 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
   color: #fff;
 }
 
+.notifications-drawer__open {
+  border: 0;
+  background: var(--shell-accent);
+  color: #fff;
+}
+
 .notifications-drawer__mark-all:hover,
-.notifications-drawer__read:hover {
+.notifications-drawer__read:hover,
+.notifications-drawer__open:hover,
+.notifications-drawer__close:hover {
   background: var(--shell-accent-strong);
 }
 
@@ -508,7 +516,7 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
 .notifications-drawer__item.is-unread {
   background:
     linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)),
-    linear-gradient(135deg, rgba(196, 71, 50, 0.12), transparent 60%);
+    linear-gradient(135deg, rgba(187, 73, 61, 0.12), transparent 60%);
 }
 
 .notifications-drawer__item-head {
@@ -590,7 +598,7 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
   height: 52px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  background: rgba(17, 20, 24, 0.92);
+  background: rgba(157, 44, 32, 0.94);
   color: #fff8ed;
   font-size: 24px;
   font-weight: 800;
@@ -611,8 +619,8 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
 
 .scroll-top:hover {
   transform: translateY(-2px);
-  background: rgba(196, 71, 50, 0.92);
-  border-color: rgba(196, 71, 50, 0.92);
+  background: rgba(127, 36, 27, 0.94);
+  border-color: rgba(127, 36, 27, 0.94);
 }
 
 body.app-shell[data-theme="clair"] .scroll-top {
