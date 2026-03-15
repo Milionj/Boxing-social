@@ -4,10 +4,14 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('post_show_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
-  <link rel="stylesheet" href="/css/post-show.css?v=20260315i">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315n">
+  <link rel="stylesheet" href="/css/post-show.css?v=20260315n">
 </head>
-<body class="app-shell">
+<body
+  class="app-shell"
+  data-post-interaction-error="<?= htmlspecialchars($t->text('posts_interaction_error'), ENT_QUOTES, 'UTF-8') ?>"
+  data-comment-delete-label="<?= htmlspecialchars($t->text('post_delete_own_comment'), ENT_QUOTES, 'UTF-8') ?>"
+>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
   <?php $isTrainingPost = (($post['post_type'] ?? 'publication') === 'entrainement'); ?>
   <main class="post-show-page app-main">
@@ -16,7 +20,12 @@
       <p><?= htmlspecialchars($t->text('post_by'), ENT_QUOTES, 'UTF-8') ?> <a href="/user?username=<?= rawurlencode((string) $post['username']) ?>"><?= htmlspecialchars((string) $post['username'], ENT_QUOTES, 'UTF-8') ?></a></p>
     </section>
 
-    <article class="post-show-card <?= $isTrainingPost ? 'post-show-card--training' : 'post-show-card--publication' ?>">
+    <article
+      class="post-show-card <?= $isTrainingPost ? 'post-show-card--training' : 'post-show-card--publication' ?>"
+      data-post-card
+      data-interaction-scope
+      data-post-id="<?= (int) $post['id'] ?>"
+    >
       <div class="post-show-card__header">
         <span class="post-show-card__type"><?= htmlspecialchars($isTrainingPost ? $t->text('posts_type_training') : $t->text('posts_type_publication'), ENT_QUOTES, 'UTF-8') ?></span>
         <div class="post-show-card__meta-wrap">
@@ -89,12 +98,17 @@
 
       <div class="post-show-card__actions">
         <div class="actions">
-          <p class="post-show-card__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?></strong><span><?= $likesCount ?></span></p>
+          <p class="post-show-card__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?></strong><span data-like-count><?= $likesCount ?></span></p>
           <?php if ($currentUserId !== null): ?>
-            <form method="post" action="/likes/toggle">
+            <form method="post" action="/likes/toggle" data-like-form>
               <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
               <input type="hidden" name="redirect_to" value="/post?id=<?= (int) $post['id'] ?>">
-              <button type="submit"><?= htmlspecialchars($isLiked ? $t->text('posts_like_remove') : $t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?></button>
+              <button
+                type="submit"
+                data-like-button
+                data-label-default="<?= htmlspecialchars($t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?>"
+                data-label-active="<?= htmlspecialchars($t->text('posts_like_remove'), ENT_QUOTES, 'UTF-8') ?>"
+              ><?= htmlspecialchars($isLiked ? $t->text('posts_like_remove') : $t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?></button>
             </form>
           <?php endif; ?>
         </div>
@@ -122,14 +136,16 @@
           </section>
         <?php endif; ?>
       </div>
+
+      <p class="msg-error" data-interaction-feedback hidden></p>
     </article>
 
-    <section class="comments-card">
+    <section class="comments-card" data-interaction-scope>
       <div class="comments-card__head">
         <div>
           <h2><?= htmlspecialchars($t->text('posts_comments'), ENT_QUOTES, 'UTF-8') ?></h2>
         </div>
-        <span class="comments-card__count"><?= count($comments) ?></span>
+        <span class="comments-card__count" data-comment-count><?= count($comments) ?></span>
       </div>
 
       <?php if (!empty($successInterest)): ?>
@@ -152,13 +168,17 @@
         <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
       <?php endforeach; ?>
 
-      <?php if (empty($comments)): ?>
-        <p class="muted"><?= htmlspecialchars($t->text('post_no_comments_yet'), ENT_QUOTES, 'UTF-8') ?></p>
-      <?php else: ?>
-        <div class="comments-list">
-          <?php foreach ($comments as $comment): ?>
-            <article class="comment">
-              <div class="comment__head">
+      <p class="msg-error" data-interaction-feedback hidden></p>
+
+      <div
+        class="comments-list"
+        data-comment-list
+        data-empty-text="<?= htmlspecialchars($t->text('post_no_comments_yet'), ENT_QUOTES, 'UTF-8') ?>"
+      >
+        <?php foreach ($comments as $comment): ?>
+          <article class="comment" data-comment-id="<?= (int) $comment['id'] ?>">
+            <div class="comment__meta">
+              <div class="comment__authorline">
                 <strong>
                   <a href="/user?username=<?= rawurlencode((string) $comment['username']) ?>">
                     <?= htmlspecialchars((string) $comment['username'], ENT_QUOTES, 'UTF-8') ?>
@@ -166,22 +186,27 @@
                 </strong>
                 <small><?= htmlspecialchars((string) $comment['created_at'], ENT_QUOTES, 'UTF-8') ?></small>
               </div>
-              <p><?= nl2br(htmlspecialchars((string) $comment['content'], ENT_QUOTES, 'UTF-8')) ?></p>
 
               <?php if ($currentUserId !== null && (int) $currentUserId === (int) $comment['user_id']): ?>
-                <form method="post" action="/comments/delete">
+                <form class="comment__delete" method="post" action="/comments/delete" data-comment-delete-form>
                   <input type="hidden" name="comment_id" value="<?= (int) $comment['id'] ?>">
                   <input type="hidden" name="redirect_to" value="/post?id=<?= (int) $post['id'] ?>">
                   <button type="submit"><?= htmlspecialchars($t->text('post_delete_own_comment'), ENT_QUOTES, 'UTF-8') ?></button>
                 </form>
               <?php endif; ?>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+            </div>
+
+            <p class="comment__text"><?= nl2br(htmlspecialchars((string) $comment['content'], ENT_QUOTES, 'UTF-8')) ?></p>
+          </article>
+        <?php endforeach; ?>
+      </div>
+
+      <p class="muted" data-comment-empty <?= empty($comments) ? '' : 'hidden' ?>>
+        <?= htmlspecialchars($t->text('post_no_comments_yet'), ENT_QUOTES, 'UTF-8') ?>
+      </p>
 
       <?php if ($currentUserId !== null): ?>
-        <form class="comment-form" method="post" action="/comments">
+        <form class="comment-form" method="post" action="/comments" data-comment-form>
           <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
           <input type="hidden" name="redirect_to" value="/post?id=<?= (int) $post['id'] ?>">
           <textarea name="content" rows="4" placeholder="<?= htmlspecialchars($t->text('posts_add_comment'), ENT_QUOTES, 'UTF-8') ?>" required></textarea>
@@ -191,5 +216,6 @@
     </section>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
+  <script src="/js/post-interactions.js?v=20260315n" defer></script>
 </body>
 </html>

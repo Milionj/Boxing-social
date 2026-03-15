@@ -5,6 +5,25 @@ namespace App\Core;
 
 final class Request
 {
+    public function header(string $name, ?string $default = null): ?string
+    {
+        $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+
+        return isset($_SERVER[$serverKey]) ? (string) $_SERVER[$serverKey] : $default;
+    }
+
+    public function expectsJson(): bool
+    {
+        $requestedWith = $this->header('X-Requested-With', '');
+        if (strcasecmp($requestedWith, 'XMLHttpRequest') === 0) {
+            return true;
+        }
+
+        $accept = $this->header('Accept', '');
+
+        return stripos($accept, 'application/json') !== false;
+    }
+
     public function method(): string
     {
         return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
