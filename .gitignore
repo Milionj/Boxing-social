@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+vendor/
+node_modules/
+
+# Runtime files
+*.log
+tmp/
+cache/
+
+# User-generated uploads
+public/uploads/
+public/var/
+var/uploads/
+boxing-social/public/uploads/
+boxing-social/public/var/
+boxing-social/var/uploads/
