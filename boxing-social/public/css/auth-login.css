@@ -1,0 +1,9 @@
+body{font-family:Arial,sans-serif;background:#f4f4f4;color:#222;margin:0}
+.page{max-width:520px;margin:40px auto;background:#fff;padding:24px;border:1px solid #ddd}
+h1{margin-top:0}
+.msg-error{color:#b42318}
+.msg-success{color:#067647}
+form{display:grid;gap:10px}
+input,button{padding:10px;font-size:14px}
+button{cursor:pointer}
+.link{display:inline-block;margin-top:12px}

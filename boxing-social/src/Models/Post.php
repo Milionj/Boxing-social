@@ -17,89 +17,200 @@ final class Post
 
     public function create(
         int $userId,
+        string $postType,
         string $title,
         string $content,
-        ?string $imagePath,
+        ?string $mediaPath,
+        string $mediaType,
+        string $mediaSize,
         ?string $location,
-        string $visibility = 'public'
+        string $visibility = 'public',
+        ?string $scheduledAt = null
     ): bool {
+        // On stocke maintenant le type du post pour distinguer :
+        // - une publication simple
+        // - une declaration de seance d entrainement
         $stmt = $this->pdo->prepare(
-            'INSERT INTO posts (user_id, title, content, image_path, location, visibility)
-             VALUES (:user_id, :title, :content, :image_path, :location, :visibility)'
+            'INSERT INTO posts (user_id, post_type, title, content, image_path, media_type, media_size, location, visibility, scheduled_at)
+             VALUES (:user_id, :post_type, :title, :content, :image_path, :media_type, :media_size, :location, :visibility, :scheduled_at)'
         );
 
         return $stmt->execute([
             'user_id' => $userId,
+            'post_type' => $postType,
             'title' => $title !== '' ? $title : null,
             'content' => $content,
-            'image_path' => $imagePath,
+            'image_path' => $mediaPath,
+            'media_type' => $mediaType,
+            'media_size' => $mediaSize,
             'location' => $location !== '' ? $location : null,
             'visibility' => $visibility,
+            'scheduled_at' => $scheduledAt,
         ]);
     }
 
-    public function latestFeed(int $limit = 20): array
+    public function latestFeed(int $limit = 20, int $offset = 0): array
     {
         $stmt = $this->pdo->prepare(
             'SELECT
                 p.id,
                 p.user_id,
+                p.post_type,
                 p.title,
                 p.content,
                 p.image_path,
+                p.media_type,
+                p.media_size,
                 p.location,
+                p.scheduled_at,
                 p.visibility,
                 p.created_at,
                 u.username
              FROM posts p
              INNER JOIN users u ON u.id = p.user_id
              ORDER BY p.created_at DESC
-             LIMIT :lim'
+             LIMIT :lim OFFSET :off'
         );
         $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
     }
+
+    public function feedCount(): int
+    {
+        $stmt = $this->pdo->query('SELECT COUNT(*) FROM posts');
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function latestByUserId(int $userId, int $limit = 20, int $offset = 0): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                p.id,
+                p.user_id,
+                p.post_type,
+                p.title,
+                p.content,
+                p.image_path,
+                p.media_type,
+                p.media_size,
+                p.location,
+                p.scheduled_at,
+                p.visibility,
+                p.created_at,
+                u.username
+             FROM posts p
+             INNER JOIN users u ON u.id = p.user_id
+             WHERE p.user_id = :user_id
+             ORDER BY p.created_at DESC
+             LIMIT :lim OFFSET :off'
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countByUserId(int $userId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*)
+             FROM posts
+             WHERE user_id = :user_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function findById(int $id): ?array
-{
-    $stmt = $this->pdo->prepare(
-        'SELECT id, user_id, title, content, image_path, location, visibility, created_at
-         FROM posts
-         WHERE id = :id
-         LIMIT 1'
-    );
-    $stmt->execute(['id' => $id]);
-    $post = $stmt->fetch();
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, user_id, post_type, title, content, image_path, media_type, media_size, location, scheduled_at, visibility, created_at
+             FROM posts
+             WHERE id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $post = $stmt->fetch();
 
-    return $post ?: null;
-}
+        return $post ?: null;
+    }
 
-// mise a jour d'un post par son proprietaire
+    public function findDetailedById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                p.id,
+                p.user_id,
+                p.post_type,
+                p.title,
+                p.content,
+                p.image_path,
+                p.media_type,
+                p.media_size,
+                p.location,
+                p.scheduled_at,
+                p.visibility,
+                p.created_at,
+                u.username
+             FROM posts p
+             INNER JOIN users u ON u.id = p.user_id
+             WHERE p.id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $post = $stmt->fetch();
 
-public function updateByOwner(
-    int $postId,
-    int $ownerId,
-    string $title,
-    string $content,
-    ?string $location,
-    string $visibility
-): bool {
-    $stmt = $this->pdo->prepare(
-        'UPDATE posts
-         SET title = :title, content = :content, location = :location, visibility = :visibility, updated_at = CURRENT_TIMESTAMP
-         WHERE id = :post_id AND user_id = :owner_id'
-    );
+        return $post ?: null;
+    }
 
-    return $stmt->execute([
-        'title' => $title !== '' ? $title : null,
-        'content' => $content,
-        'location' => $location !== '' ? $location : null,
-        'visibility' => $visibility,
-        'post_id' => $postId,
-        'owner_id' => $ownerId,
-    ]);
-}
+    public function updateByOwner(
+        int $postId,
+        int $ownerId,
+        string $postType,
+        string $title,
+        string $content,
+        ?string $mediaPath,
+        string $mediaType,
+        string $mediaSize,
+        ?string $location,
+        string $visibility,
+        ?string $scheduledAt
+    ): bool {
+        $stmt = $this->pdo->prepare(
+            'UPDATE posts
+             SET post_type = :post_type,
+                 title = :title,
+                 content = :content,
+                 image_path = :image_path,
+                 media_type = :media_type,
+                 media_size = :media_size,
+                 location = :location,
+                 visibility = :visibility,
+                 scheduled_at = :scheduled_at,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = :post_id AND user_id = :owner_id'
+        );
+
+        return $stmt->execute([
+            'post_type' => $postType,
+            'title' => $title !== '' ? $title : null,
+            'content' => $content,
+            'image_path' => $mediaPath,
+            'media_type' => $mediaType,
+            'media_size' => $mediaSize,
+            'location' => $location !== '' ? $location : null,
+            'visibility' => $visibility,
+            'scheduled_at' => $scheduledAt,
+            'post_id' => $postId,
+            'owner_id' => $ownerId,
+        ]);
+    }
 
 //like  etc
 
@@ -134,7 +245,7 @@ public function toggleLike(int $postId, int $userId): bool
     ]);
 }
 
-public function likesCountByPostId(int $postId): int
+    public function likesCountByPostId(int $postId): int
 {
     $stmt = $this->pdo->prepare(
         'SELECT COUNT(*) FROM post_likes WHERE post_id = :post_id'
@@ -155,6 +266,50 @@ public function isLikedByUser(int $postId, int $userId): bool
     return (bool) $stmt->fetchColumn();
 }
 
+public function hasInterestByUser(int $postId, int $userId): bool
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT 1
+         FROM post_interests
+         WHERE post_id = :post_id AND user_id = :user_id
+         LIMIT 1'
+    );
+    $stmt->execute([
+        'post_id' => $postId,
+        'user_id' => $userId,
+    ]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
+public function interestCountByPostId(int $postId): int
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT COUNT(*)
+         FROM post_interests
+         WHERE post_id = :post_id'
+    );
+    $stmt->execute(['post_id' => $postId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+public function addInterest(int $postId, int $userId): bool
+{
+    // INSERT IGNORE + contrainte unique = protection simple contre les doublons.
+    $stmt = $this->pdo->prepare(
+        'INSERT IGNORE INTO post_interests (post_id, user_id)
+         VALUES (:post_id, :user_id)'
+    );
+
+    $stmt->execute([
+        'post_id' => $postId,
+        'user_id' => $userId,
+    ]);
+
+    return $stmt->rowCount() > 0;
+}
+
 public function deleteByOwner(int $postId, int $ownerId): bool
 {
     $stmt = $this->pdo->prepare(
@@ -165,5 +320,61 @@ public function deleteByOwner(int $postId, int $ownerId): bool
         'post_id' => $postId,
         'owner_id' => $ownerId,
     ]);
+}
+
+public function latestForAdmin(int $limit = 100): array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT p.id, p.user_id, p.title, p.content, p.visibility, p.created_at, u.username
+         , p.post_type, p.scheduled_at
+         FROM posts p
+         INNER JOIN users u ON u.id = p.user_id
+         ORDER BY p.created_at DESC
+         LIMIT :lim'
+    );
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
+public function deleteByAdmin(int $postId): bool
+{
+    $stmt = $this->pdo->prepare('DELETE FROM posts WHERE id = :id');
+
+    return $stmt->execute(['id' => $postId]);
+}
+
+public function latestPublicByUserId(int $userId, int $limit = 12, int $offset = 0): array
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT id, user_id, post_type, title, content, image_path, media_type, media_size, location, scheduled_at, visibility, created_at
+         FROM posts
+         WHERE user_id = :user_id AND visibility = :visibility
+         ORDER BY created_at DESC
+         LIMIT :lim OFFSET :off'
+    );
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':visibility', 'public', PDO::PARAM_STR);
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
+public function publicCountByUserId(int $userId): int
+{
+    $stmt = $this->pdo->prepare(
+        'SELECT COUNT(*)
+         FROM posts
+         WHERE user_id = :user_id AND visibility = :visibility'
+    );
+    $stmt->execute([
+        'user_id' => $userId,
+        'visibility' => 'public',
+    ]);
+
+    return (int) $stmt->fetchColumn();
 }
 }

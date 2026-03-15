@@ -5,17 +5,20 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Models\Post;
 use App\Models\User;
 use App\Services\AuthService;
 
 final class ProfileController
 {
     private User $users;    
+    private Post $posts;
     private AuthService $auth;
 
     public function __construct()
     {
         $this->users = new User();
+        $this->posts = new Post();
         $this->auth = new AuthService();
     }
 
@@ -50,6 +53,32 @@ final class ProfileController
         require dirname(__DIR__, 2) . '/templates/profile.php';
     }
 
+    public function publicShow(Request $request, Response $response): void
+    {
+        $username = trim((string) $request->input('username', ''));
+        if ($username === '') {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $user = $this->users->findByUsername($username);
+        if ($user === null) {
+            $response->errorPage(404, '404');
+            return;
+        }
+
+        $perPage = 6;
+        $currentPage = max(1, (int) $request->input('page', 1));
+        $totalPosts = $this->posts->publicCountByUserId((int) $user['id']);
+        $totalPages = max(1, (int) ceil($totalPosts / $perPage));
+        $currentPage = min($currentPage, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+
+        $posts = $this->posts->latestPublicByUserId((int) $user['id'], $perPage, $offset);
+
+        require dirname(__DIR__, 2) . '/templates/public-profile.php';
+    }
+
     public function update(Request $request, Response $response): void
     {
         $userId = $this->requireAuth($response);
@@ -59,12 +88,14 @@ final class ProfileController
 
         $username = trim((string) $request->input('username', ''));
         $email = strtolower(trim((string) $request->input('email', '')));
+        // La bio reste optionnelle, mais on borne sa taille pour garder
+        // une fiche profil lisible et un stockage raisonnable.
         $bio = trim((string) $request->input('bio', ''));
 
         $errors = [];
 
         if ($username === '' || strlen($username) < 3 || strlen($username) > 30) {
-            $errors[] = 'Le pseudo doit contenir entre 3 et 30 caracteres.';
+            $errors[] = 'Le pseudo doit contenir entre 3 et 30 caractères.';
         }
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
             $errors[] = 'Le pseudo ne doit contenir que lettres, chiffres et underscore.';
@@ -72,11 +103,14 @@ final class ProfileController
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Email invalide.';
         }
+        if (strlen($bio) > 500) {
+            $errors[] = 'La bio ne doit pas dépasser 500 caractères.';
+        }
         if ($this->users->existsByUsername($username, $userId)) {
-            $errors[] = 'Ce pseudo est deja utilise.';
+            $errors[] = 'Ce pseudo est déjà utilisé.';
         }
         if ($this->users->existsByEmail($email, $userId)) {
-            $errors[] = 'Cet email est deja utilise.';
+            $errors[] = 'Cet email est déjà utilisé.';
         }
 
         if ($errors !== []) {
@@ -88,7 +122,7 @@ final class ProfileController
         $this->users->updateProfile($userId, $username, $email, $bio);
         $_SESSION['user']['username'] = $username;
         $_SESSION['user']['email'] = $email;
-        $_SESSION['success'] = 'Profil mis a jour.';
+        $_SESSION['success'] = 'Profil mis à jour.';
 
         $response->redirect('/profile');
     }
@@ -111,7 +145,7 @@ final class ProfileController
     }
 
     if (strlen($newPassword) < 8) {
-        $errors[] = 'Le nouveau mot de passe doit contenir au moins 8 caracteres.';
+        $errors[] = 'Le nouveau mot de passe doit contenir au moins 8 caractères.';
     }
 
     if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
@@ -133,7 +167,7 @@ final class ProfileController
     }
 
     $this->auth->updatePassword($userId, $newPassword);
-    $_SESSION['success_password'] = 'Mot de passe mis a jour avec succes.';
+    $_SESSION['success_password'] = 'Mot de passe mis à jour avec succès.';
     $response->redirect('/profile');
 }
 
@@ -146,7 +180,7 @@ final class ProfileController
     }
 
     if (!isset($_FILES['avatar']) || !is_array($_FILES['avatar'])) {
-        $_SESSION['errors_avatar'] = ['Aucun fichier recu.'];
+        $_SESSION['errors_avatar'] = ['Aucun fichier reçu.'];
         $response->redirect('/profile');
         return;
     }
@@ -186,7 +220,7 @@ final class ProfileController
 
     $uploadDir = dirname(__DIR__, 2) . '/public/uploads/avatars';
     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-        $_SESSION['errors_avatar'] = ['Impossible de creer le dossier de stockage.'];
+        $_SESSION['errors_avatar'] = ['Impossible de créer le dossier de stockage.'];
         $response->redirect('/profile');
         return;
     }
@@ -201,7 +235,7 @@ final class ProfileController
     $publicPath = '/uploads/avatars/' . $newName;
     $this->users->updateAvatarPath($userId, $publicPath);
 
-    $_SESSION['success_avatar'] = 'Photo de profil mise a jour.';
+    $_SESSION['success_avatar'] = 'Photo de profil mise à jour.';
     $response->redirect('/profile');
 }
 

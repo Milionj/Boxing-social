@@ -7,6 +7,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Models\Friendship;
 use App\Models\Notification;
+use App\Models\User;
 /**
  * FriendshipController
  * --------------------
@@ -29,12 +30,14 @@ final class FriendshipController
      */
     private Friendship $friendships;
     private Notification $notifications;
+    private User $users;
 
     public function __construct()
     {
         // Instancie le modèle (qui récupère la connexion PDO)
         $this->friendships = new Friendship();
         $this->notifications = new Notification();
+        $this->users = new User();
     }
 
     /**
@@ -100,14 +103,16 @@ final class FriendshipController
             return;
         }
 
-        // ID de la cible (utilisateur qu'on veut ajouter)
-        $targetId = (int) $request->input('user_id', 0);
+        // On laisse l'utilisateur chercher par pseudo, puis on résout le compte en base.
+        $targetUsername = trim((string) $request->input('username', ''));
+        $targetUser = $targetUsername !== '' ? $this->users->findByUsername($targetUsername) : null;
+        $targetId = (int) ($targetUser['id'] ?? 0);
 
         // Validation minimale :
         // - ID valide
         // - on ne peut pas s'ajouter soi-même
         if ($targetId <= 0 || $targetId === $userId) {
-            $_SESSION['errors_friends'] = ['Demande invalide.'];
+            $_SESSION['errors_friends'] = ['Pseudo introuvable ou demande invalide.'];
             $response->redirect('/friends');
             return;
         }
@@ -117,7 +122,7 @@ final class FriendshipController
 
         // Si échec (ex: doublon, contrainte SQL, etc.)
         if (!$ok) {
-            $_SESSION['errors_friends'] = ['Impossible d envoyer la demande (deja existante ?)'];
+            $_SESSION['errors_friends'] = ['Impossible d’envoyer la demande (déjà existante ?)'];
             $response->redirect('/friends');
             return;
         }
@@ -127,11 +132,11 @@ final class FriendshipController
             $userId,
             'friend_request',
             null,
-            'Vous avez recu une demande d ami.'
+            'Vous avez reçu une demande d’ami.'
         );
 
         // Message flash succès + redirect
-        $_SESSION['success_friends'] = 'Demande envoyee.';
+        $_SESSION['success_friends'] = 'Demande envoyée.';
         $response->redirect('/friends');
     }
 
@@ -177,11 +182,11 @@ final class FriendshipController
                 $userId,
                 'friend_accept',
                 null,
-                'Votre demande d ami a ete acceptee.'
+                'Votre demande d’ami a été acceptée.'
             );
         }
 
-        $_SESSION['success_friends'] = 'Demande acceptee.';
+        $_SESSION['success_friends'] = 'Demande acceptée.';
         $response->redirect('/friends');
     }
 
@@ -209,7 +214,7 @@ final class FriendshipController
         // Le modèle applique la mise à jour conditionnelle vers "declined"
         $this->friendships->updateStatusByAddressee($id, $userId, 'declined');
 
-        $_SESSION['success_friends'] = 'Demande refusee.';
+        $_SESSION['success_friends'] = 'Demande refusée.';
         $response->redirect('/friends');
     }
 }

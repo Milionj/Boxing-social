@@ -1,91 +1,168 @@
+<?php require dirname(__DIR__) . '/templates/partials/app-locale.php'; ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
-  <title>Profil</title>
+  <title><?= htmlspecialchars($t->text('profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
+  <link rel="stylesheet" href="/css/profile.css?v=20260315i">
 </head>
-<body>
-  <h1>Mon profil</h1>
+<body class="app-shell">
+  <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
+  <main class="profile-page app-main">
+    <?php $errorsPassword = $_SESSION['errors_password'] ?? []; ?>
+    <?php $successPassword = $_SESSION['success_password'] ?? ''; ?>
+    <?php unset($_SESSION['errors_password'], $_SESSION['success_password']); ?>
 
-  <?php if (!empty($success)): ?>
-    <p style="color:#067647;"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
-  <?php endif; ?>
+    <?php $errorsAvatar = $_SESSION['errors_avatar'] ?? []; ?>
+    <?php $successAvatar = $_SESSION['success_avatar'] ?? ''; ?>
+    <?php unset($_SESSION['errors_avatar'], $_SESSION['success_avatar']); ?>
 
-  <?php if (!empty($errors)): ?>
-    <?php foreach ($errors as $error): ?>
-      <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endforeach; ?>
-  <?php endif; ?>
+    <section class="profile-hero">
+      <h1><?= htmlspecialchars($t->text('profile_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+    </section>
 
-  <p><strong>ID:</strong> <?= (int) $user['id'] ?></p>
-  <p><strong>Role:</strong> <?= htmlspecialchars((string) $user['role'], ENT_QUOTES, 'UTF-8') ?></p>
+    <div class="profile-layout">
+      <aside class="profile-summary card">
+        <div class="profile-summary__avatar-wrap">
+          <?php if (!empty($user['avatar_path'])): ?>
+            <img class="profile-summary__avatar" src="<?= htmlspecialchars((string) $user['avatar_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('profile_avatar_alt'), ENT_QUOTES, 'UTF-8') ?>">
+          <?php else: ?>
+            <div class="profile-summary__avatar profile-summary__avatar--fallback">
+              <?= htmlspecialchars(strtoupper(substr((string) $user['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?>
+            </div>
+          <?php endif; ?>
+        </div>
 
-  <form method="post" action="/profile">
-    <input name="username" required value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
-    <input name="email" type="email" required value="<?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?>">
-    <textarea name="bio" rows="5" cols="40"><?= htmlspecialchars((string) ($user['bio'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-    <button type="submit">Enregistrer</button>
-  </form>
+        <div class="profile-summary__identity">
+          <p class="profile-summary__eyebrow"><?= htmlspecialchars($t->text('profile_identity_heading'), ENT_QUOTES, 'UTF-8') ?></p>
+          <h2><?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?></h2>
+          <p class="profile-summary__meta"><?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?></p>
+          <p class="profile-summary__meta"><?= htmlspecialchars($t->text('profile_member_since'), ENT_QUOTES, 'UTF-8') ?> : <?= htmlspecialchars((string) $user['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
 
-  <form method="post" action="/logout" style="margin-top:12px;">
-    <button type="submit">Se deconnecter</button>
-  </form>
+        <div class="profile-summary__bio-block">
+          <h3><?= htmlspecialchars($t->text('profile_bio'), ENT_QUOTES, 'UTF-8') ?></h3>
+          <p>
+            <?= nl2br(htmlspecialchars((string) (($user['bio'] ?? '') !== '' ? $user['bio'] : $t->text('profile_bio_empty')), ENT_QUOTES, 'UTF-8')) ?>
+          </p>
+        </div>
+      </aside>
 
-  <?php $errorsPassword = $_SESSION['errors_password'] ?? []; ?>
-<?php $successPassword = $_SESSION['success_password'] ?? ''; ?>
-<?php unset($_SESSION['errors_password'], $_SESSION['success_password']); ?>
+      <div class="profile-stack">
+        <section class="card profile-card">
+          <div class="profile-card__head">
+            <div>
+              <h2><?= htmlspecialchars($t->text('profile_account_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+          </div>
 
-<hr>
+          <?php if (!empty($success)): ?>
+            <p class="msg-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></p>
+          <?php endif; ?>
 
-<?php $errorsAvatar = $_SESSION['errors_avatar'] ?? []; ?>
-<?php $successAvatar = $_SESSION['success_avatar'] ?? ''; ?>
-<?php unset($_SESSION['errors_avatar'], $_SESSION['success_avatar']); ?>
+          <?php if (!empty($errors)): ?>
+            <?php foreach ($errors as $error): ?>
+              <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endforeach; ?>
+          <?php endif; ?>
 
-<hr>
-<h2>Photo de profil</h2>
+          <form class="profile-form" method="post" action="/profile">
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_username'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input name="username" required value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
+            </label>
 
-<?php if (!empty($user['avatar_path'])): ?>
-  <p>
-    <img src="<?= htmlspecialchars((string) $user['avatar_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Avatar" style="max-width:160px;height:auto;">
-  </p>
-<?php endif; ?>
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_email'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input name="email" type="email" required value="<?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?>">
+            </label>
 
-<?php if (!empty($successAvatar)): ?>
-  <p style="color:#067647;"><?= htmlspecialchars($successAvatar, ENT_QUOTES, 'UTF-8') ?></p>
-<?php endif; ?>
+            <label class="profile-form__bio">
+              <span><?= htmlspecialchars($t->text('profile_bio'), ENT_QUOTES, 'UTF-8') ?></span>
+              <textarea name="bio" rows="7" maxlength="500" placeholder="<?= htmlspecialchars($t->text('profile_bio_placeholder'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string) ($user['bio'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+            </label>
 
-<?php if (!empty($errorsAvatar)): ?>
-  <?php foreach ($errorsAvatar as $error): ?>
-    <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-  <?php endforeach; ?>
-<?php endif; ?>
+            <div class="profile-form__footer">
+              <div class="profile-form__meta">
+                <span><?= htmlspecialchars($t->text('profile_id'), ENT_QUOTES, 'UTF-8') ?> : <?= (int) $user['id'] ?></span>
+              </div>
+              <button type="submit"><?= htmlspecialchars($t->text('profile_save'), ENT_QUOTES, 'UTF-8') ?></button>
+            </div>
+          </form>
 
-<form method="post" action="/profile/avatar" enctype="multipart/form-data">
-  <input type="file" name="avatar" accept=".jpg,.jpeg,.png,.webp" required>
-  <button type="submit">Mettre a jour la photo</button>
-</form>
+        </section>
 
-<hr>
-<h2>Changer le mot de passe</h2>
+        <section class="card profile-card">
+          <div class="profile-card__head">
+            <div>
+              <h2><?= htmlspecialchars($t->text('profile_avatar_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+          </div>
 
-<?php if (!empty($successPassword)): ?>
-  <p style="color:#067647;"><?= htmlspecialchars($successPassword, ENT_QUOTES, 'UTF-8') ?></p>
-<?php endif; ?>
+          <?php if (!empty($successAvatar)): ?>
+            <p class="msg-success"><?= htmlspecialchars($successAvatar, ENT_QUOTES, 'UTF-8') ?></p>
+          <?php endif; ?>
 
-<?php if (!empty($errorsPassword)): ?>
-  <?php foreach ($errorsPassword as $error): ?>
-    <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-  <?php endforeach; ?>
-<?php endif; ?>
+          <?php if (!empty($errorsAvatar)): ?>
+            <?php foreach ($errorsAvatar as $error): ?>
+              <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endforeach; ?>
+          <?php endif; ?>
 
-<form method="post" action="/profile/password">
-  <input type="password" name="current_password" placeholder="Mot de passe actuel" required>
-  <input type="password" name="new_password" placeholder="Nouveau mot de passe" required>
-  <input type="password" name="confirm_password" placeholder="Confirmer le nouveau mot de passe" required>
-  <button type="submit">Mettre a jour le mot de passe</button>
-</form>
+          <form class="profile-form" method="post" action="/profile/avatar" enctype="multipart/form-data">
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_avatar_heading'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input type="file" name="avatar" accept=".jpg,.jpeg,.png,.webp" required>
+            </label>
+            <div class="profile-form__footer">
+              <small>JPG, PNG ou WEBP, 2MB maximum.</small>
+              <button type="submit"><?= htmlspecialchars($t->text('profile_avatar_update'), ENT_QUOTES, 'UTF-8') ?></button>
+            </div>
+          </form>
 
+        </section>
 
-  <p><a href="/">Accueil</a></p>
+        <section class="card profile-card">
+          <div class="profile-card__head">
+            <div>
+              <h2><?= htmlspecialchars($t->text('profile_password_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+          </div>
+
+          <?php if (!empty($successPassword)): ?>
+            <p class="msg-success"><?= htmlspecialchars($successPassword, ENT_QUOTES, 'UTF-8') ?></p>
+          <?php endif; ?>
+
+          <?php if (!empty($errorsPassword)): ?>
+            <?php foreach ($errorsPassword as $error): ?>
+              <p class="msg-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endforeach; ?>
+          <?php endif; ?>
+
+          <form class="profile-form" method="post" action="/profile/password">
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_password_current'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input type="password" name="current_password" required>
+            </label>
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_password_new'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input type="password" name="new_password" required>
+            </label>
+            <label>
+              <span><?= htmlspecialchars($t->text('profile_password_confirm'), ENT_QUOTES, 'UTF-8') ?></span>
+              <input type="password" name="confirm_password" required>
+            </label>
+            <div class="profile-form__footer">
+              <small>8 caractères minimum, avec majuscule, minuscule et chiffre.</small>
+              <button type="submit"><?= htmlspecialchars($t->text('profile_password_update'), ENT_QUOTES, 'UTF-8') ?></button>
+            </div>
+          </form>
+
+        </section>
+      </div>
+    </div>
+  </main>
+  <?php require dirname(__DIR__) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

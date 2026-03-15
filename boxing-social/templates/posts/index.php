@@ -1,117 +1,58 @@
+<?php require dirname(__DIR__, 2) . '/templates/partials/app-locale.php'; ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
-  <title>Feed Posts</title>
+  <title><?= htmlspecialchars($t->text('posts_title'), ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315m">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260315m">
 </head>
-<body>
-  <h1>Derniers posts</h1>
+<body class="app-shell">
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
+  <main class="posts-page app-main">
+    <section class="posts-hero">
+      <h1><?= htmlspecialchars($t->text('posts_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+      <p><?= htmlspecialchars($t->text('posts_intro'), ENT_QUOTES, 'UTF-8') ?></p>
+    </section>
 
-  <p>
-    <a href="/">Accueil</a> |
-    <a href="/posts/create">Creer un post</a> |
-    <a href="/profile">Mon profil</a>
-  </p>
+    <div class="posts-layout">
+      <section class="posts-feed">
+        <div class="posts-feed__head">
+          <p class="posts-feed__eyebrow"><?= htmlspecialchars($t->text('posts_feed_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
 
-  <?php $errorsComments = $_SESSION['errors_comments'] ?? []; ?>
-  <?php $successComments = $_SESSION['success_comments'] ?? ''; ?>
-  <?php $errorsLikes = $_SESSION['errors_likes'] ?? []; ?>
-  <?php unset($_SESSION['errors_comments'], $_SESSION['success_comments']); ?>
-  <?php unset($_SESSION['errors_likes']); ?>
+        <div class="posts-feed__body">
+          <?php $feedBasePath = '/posts'; ?>
+          <?php require dirname(__DIR__, 2) . '/templates/posts/feed-list.php'; ?>
+        </div>
+      </section>
 
-  <?php if (!empty($successComments)): ?>
-    <p style="color:#067647;"><?= htmlspecialchars($successComments, ENT_QUOTES, 'UTF-8') ?></p>
-  <?php endif; ?>
-
-  <?php if (!empty($errorsComments)): ?>
-    <?php foreach ($errorsComments as $error): ?>
-      <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endforeach; ?>
-  <?php endif; ?>
-
-  <?php if (!empty($errorsLikes)): ?>
-    <?php foreach ($errorsLikes as $error): ?>
-      <p style="color:#b42318;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endforeach; ?>
-  <?php endif; ?>
-
-  <?php if (empty($feed)): ?>
-    <p>Aucun post pour le moment.</p>
-  <?php else: ?>
-    <?php foreach ($feed as $post): ?>
-      <article style="border:1px solid #ddd;padding:12px;margin:12px 0;">
-        <h3><?= htmlspecialchars((string) ($post['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></h3>
-        <p><strong>Auteur:</strong> <?= htmlspecialchars((string) $post['username'], ENT_QUOTES, 'UTF-8') ?></p>
-        <p><?= nl2br(htmlspecialchars((string) $post['content'], ENT_QUOTES, 'UTF-8')) ?></p>
-
-        <?php if (!empty($post['image_path'])): ?>
-          <p><img src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image post" style="max-width:280px;height:auto;"></p>
-        <?php endif; ?>
-
-        <?php if (!empty($post['location'])): ?>
-          <p><strong>Lieu:</strong> <?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></p>
-        <?php endif; ?>
-
-        <?php $currentUserId = $_SESSION['user']['id'] ?? null; ?>
-        <?php if ($currentUserId !== null && (int) $currentUserId === (int) $post['user_id']): ?>
-          <p><a href="/posts/edit?id=<?= (int) $post['id'] ?>">Modifier</a></p>
-          <form method="post" action="/posts/delete" onsubmit="return confirm('Supprimer ce post ?');">
-            <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
-            <button type="submit">Supprimer</button>
-          </form>
-        <?php endif; ?>
-
-        <p><small><?= htmlspecialchars((string) $post['created_at'], ENT_QUOTES, 'UTF-8') ?> | <?= htmlspecialchars((string) $post['visibility'], ENT_QUOTES, 'UTF-8') ?></small></p>
-
-        <hr>
-        <?php $postId = (int) $post['id']; ?>
-<?php $likesCount = (int) ($likesCountByPost[$postId] ?? 0); ?>
-<?php $isLiked = (bool) ($likedByCurrentUser[$postId] ?? false); ?>
-
-<p><strong>Likes:</strong> <?= $likesCount ?></p>
-
-<?php if ($currentUserId !== null): ?>
-  <form method="post" action="/likes/toggle">
-    <input type="hidden" name="post_id" value="<?= $postId ?>">
-    <button type="submit"><?= $isLiked ? 'Retirer le like' : 'Liker' ?></button>
-  </form>
-<?php endif; ?>
-
-        <hr>
-        <h4>Commentaires</h4>
-
-        <?php $postComments = $commentsByPost[(int) $post['id']] ?? []; ?>
-        <?php if (empty($postComments)): ?>
-          <p>Aucun commentaire.</p>
-        <?php else: ?>
-          <?php foreach ($postComments as $comment): ?>
-            <div style="padding:8px;border:1px solid #eee;margin-bottom:8px;">
-              <p>
-                <strong><?= htmlspecialchars((string) $comment['username'], ENT_QUOTES, 'UTF-8') ?>:</strong>
-                <?= nl2br(htmlspecialchars((string) $comment['content'], ENT_QUOTES, 'UTF-8')) ?>
-              </p>
-              <small><?= htmlspecialchars((string) $comment['created_at'], ENT_QUOTES, 'UTF-8') ?></small>
-
-              <?php if ($currentUserId !== null && (int) $currentUserId === (int) $comment['user_id']): ?>
-                <form method="post" action="/comments/delete" style="margin-top:6px;">
-                  <input type="hidden" name="comment_id" value="<?= (int) $comment['id'] ?>">
-                  <button type="submit">Supprimer commentaire</button>
-                </form>
-              <?php endif; ?>
+      <aside class="feed-side-rail" aria-label="Raccourci amis">
+        <section class="feed-side-card">
+          <div class="feed-side-card__head">
+            <div>
+              <p class="feed-side-card__eyebrow">Amis</p>
+              <h2><?= htmlspecialchars($t->text('friends_quick_heading'), ENT_QUOTES, 'UTF-8') ?></h2>
             </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
+            <a href="/friends"><?= htmlspecialchars($t->text('friends_quick_view_all'), ENT_QUOTES, 'UTF-8') ?></a>
+          </div>
 
-        <?php if ($currentUserId !== null): ?>
-          <form method="post" action="/comments">
-            <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
-            <textarea name="content" rows="2" cols="50" placeholder="Ajouter un commentaire..." required></textarea>
-            <br>
-            <button type="submit">Commenter</button>
-          </form>
-        <?php endif; ?>
-      </article>
-    <?php endforeach; ?>
-  <?php endif; ?>
+          <?php if (empty($quickFriends)): ?>
+            <p class="feed-side-card__empty"><?= htmlspecialchars($t->text('friends_quick_empty'), ENT_QUOTES, 'UTF-8') ?></p>
+          <?php else: ?>
+            <div class="feed-side-card__list">
+              <?php foreach ($quickFriends as $friend): ?>
+                <a class="feed-side-card__friend" href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
+                  <span class="feed-side-card__avatar"><?= htmlspecialchars(strtoupper(substr((string) $friend['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+                  <span class="feed-side-card__name"><?= htmlspecialchars((string) $friend['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
 </body>
 </html>

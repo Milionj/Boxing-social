@@ -66,12 +66,37 @@ final class NotificationController
 
         // Liste des notifications (80 max ici, choix MVP)
         $items = $this->notifications->latestForUser($userId, 80);
+        foreach ($items as &$item) {
+            $item['target_url'] = $this->resolveTargetUrl($item);
+        }
+        unset($item);
 
         // Compteur des notifications non lues (utile pour badge/navbar)
         $unreadCount = $this->notifications->unreadCount($userId);
 
         // Affiche le template
         require dirname(__DIR__, 2) . '/templates/notifications/index.php';
+    }
+
+    private function resolveTargetUrl(array $notification): string
+    {
+        $type = (string) ($notification['type'] ?? '');
+        $entityId = (int) ($notification['entity_id'] ?? 0);
+        $actorUsername = (string) ($notification['actor_username'] ?? '');
+
+        if (($type === 'like' || $type === 'comment') && $entityId > 0) {
+            return '/post?id=' . $entityId;
+        }
+
+        if ($type === 'message') {
+            return $actorUsername !== '' ? '/messages?username=' . rawurlencode($actorUsername) : '/messages';
+        }
+
+        if ($type === 'friend_request' || $type === 'friend_accept') {
+            return $actorUsername !== '' ? '/user?username=' . rawurlencode($actorUsername) : '/friends';
+        }
+
+        return '/notifications';
     }
 
     /**
@@ -95,14 +120,14 @@ final class NotificationController
         }
 
         // Redirection (pattern PRG : POST -> Redirect -> GET)
-        $response->redirect('/notifications');
+        $this->redirectBack($request, $response);
     }
 
     /**
      * POST /notifications/read-all
      * Marque toutes les notifications de l'utilisateur comme lues
      */
-    public function markAllRead(Response $response): void
+    public function markAllRead(Request $request, Response $response): void
     {
         $userId = $this->requireAuth($response);
         if ($userId === null) {
@@ -111,7 +136,18 @@ final class NotificationController
 
         $this->notifications->markAllRead($userId);
 
-        // Retour à la page notifications
-        $response->redirect('/notifications');
+        // Retour à la page courante ou au centre de notifications.
+        $this->redirectBack($request, $response);
+    }
+
+    private function redirectBack(Request $request, Response $response): void
+    {
+        $redirectTo = (string) $request->input('redirect_to', '/notifications');
+
+        if ($redirectTo === '' || !str_starts_with($redirectTo, '/')) {
+            $redirectTo = '/notifications';
+        }
+
+        $response->redirect($redirectTo);
     }
 }
