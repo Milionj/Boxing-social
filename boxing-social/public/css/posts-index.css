@@ -595,6 +595,11 @@
   font-size: 13px;
 }
 
+.comment__authorline a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .comment__authorline small {
   color: #655c51;
   font-size: 12px;
@@ -605,6 +610,7 @@
   color: #262a2e;
   font-size: 13px;
   line-height: 1.55;
+  white-space: pre-line;
 }
 
 .comment__delete {
@@ -674,6 +680,11 @@
 
 .post-comments__body {
   margin-top: 10px;
+}
+
+.post-comments__list {
+  display: grid;
+  gap: 8px;
 }
 
 .post-comments__form {

@@ -98,6 +98,18 @@
   line-height: 1;
 }
 
+.messages-thread__body {
+  display: grid;
+  gap: 18px;
+}
+
+.messages-thread__target {
+  margin: -4px 0 0;
+  color: #d0c6b8;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .messages-open-form,
 .messages-send-form {
   display: grid;
@@ -273,10 +285,15 @@
   margin: 0;
   color: #e8dece;
   line-height: 1.7;
+  white-space: pre-line;
 }
 
 .messages-send-form--reply {
   margin-top: 18px;
+}
+
+.messages-send-form .interaction-feedback {
+  margin: 0;
 }
 
 @media (max-width: 980px) {

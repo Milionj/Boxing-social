@@ -30,10 +30,18 @@ final class PostController
         $this->notifications = new Notification();
     }
 
-    private function requireAuth(Response $response): ?int
+    private function requireAuth(Response $response, ?Request $request = null): ?int
     {
         $id = $_SESSION['user']['id'] ?? null;
         if (!is_int($id)) {
+            if ($request?->expectsJson()) {
+                $response->json([
+                    'ok' => false,
+                    'message' => 'Connexion requise.',
+                ], 401);
+                return null;
+            }
+
             $response->redirect('/login');
             return null;
         }
@@ -49,6 +57,40 @@ final class PostController
         }
 
         $response->redirect($fallback);
+    }
+
+    private function respondInteractionError(
+        Request $request,
+        Response $response,
+        string $sessionKey,
+        string $message,
+        string $fallback = '/posts',
+        int $status = 422
+    ): void {
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => false,
+                'message' => $message,
+            ], $status);
+            return;
+        }
+
+        $_SESSION[$sessionKey] = [$message];
+        $this->redirectBack($request, $response, $fallback);
+    }
+
+    private function commentPayload(array $comment, int $currentUserId): array
+    {
+        return [
+            'id' => (int) $comment['id'],
+            'postId' => (int) $comment['post_id'],
+            'userId' => (int) $comment['user_id'],
+            'username' => (string) $comment['username'],
+            'content' => (string) $comment['content'],
+            'createdAt' => (string) $comment['created_at'],
+            'authorUrl' => '/user?username=' . rawurlencode((string) $comment['username']),
+            'canDelete' => (int) $comment['user_id'] === $currentUserId,
+        ];
     }
 
     private function buildTrainingInterestMessage(array $post, string $username): string
@@ -328,26 +370,38 @@ final class PostController
 
     public function toggleLike(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
 
         $postId = (int) $request->input('post_id', 0);
         if ($postId <= 0) {
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_likes', 'Post introuvable.');
             return;
         }
 
         $post = $this->posts->findById($postId);
         if ($post === null) {
-            $_SESSION['errors_likes'] = ['Post introuvable.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_likes', 'Post introuvable.');
             return;
         }
 
         $wasLiked = $this->posts->isLikedByUser($postId, $userId);
-        $this->posts->toggleLike($postId, $userId);
+        if (!$this->posts->toggleLike($postId, $userId)) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_likes',
+                'Impossible de mettre à jour le j’aime pour le moment.',
+                '/posts',
+                500
+            );
+            return;
+        }
+
+        $isLiked = !$wasLiked;
+        $likesCount = $this->posts->likesCountByPostId($postId);
 
         // NOTIF: only create notification when a new like is added (not when removed).
         // NOTIF: never notify if user likes their own post.
@@ -361,44 +415,64 @@ final class PostController
             );
         }
 
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'liked' => $isLiked,
+                'likesCount' => $likesCount,
+            ]);
+            return;
+        }
+
         $this->redirectBack($request, $response, '/posts');
     }
 
     public function expressInterest(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
 
         $postId = (int) $request->input('post_id', 0);
         if ($postId <= 0) {
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_posts_interest', 'Séance introuvable.');
             return;
         }
 
         $post = $this->posts->findDetailedById($postId);
         if ($post === null) {
-            $_SESSION['errors_posts_interest'] = ['Séance introuvable.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_posts_interest', 'Séance introuvable.');
             return;
         }
 
         if (($post['post_type'] ?? 'publication') !== 'entrainement') {
-            $_SESSION['errors_posts_interest'] = ['Cette action est réservée aux déclarations de séances.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Cette action est réservée aux déclarations de séances.'
+            );
             return;
         }
 
         if ((int) $post['user_id'] === $userId) {
-            $_SESSION['errors_posts_interest'] = ['Vous ne pouvez pas manifester votre intérêt sur votre propre séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous ne pouvez pas manifester votre intérêt sur votre propre séance.'
+            );
             return;
         }
 
         if ($this->posts->hasInterestByUser($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous avez déjà manifesté votre intérêt pour cette séance.'
+            );
             return;
         }
 
@@ -406,14 +480,24 @@ final class PostController
         $content = $this->buildTrainingInterestMessage($post, $username);
 
         if (!$this->posts->addInterest($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous avez déjà manifesté votre intérêt pour cette séance.'
+            );
             return;
         }
 
         if (!$this->messages->send($userId, (int) $post['user_id'], $content)) {
-            $_SESSION['errors_posts_interest'] = ['Impossible d’envoyer votre intérêt pour le moment.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Impossible d’envoyer votre intérêt pour le moment.',
+                '/posts',
+                500
+            );
             return;
         }
 
@@ -425,13 +509,23 @@ final class PostController
             'Un utilisateur a manifesté son intérêt pour votre séance.'
         );
 
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'interested' => true,
+                'interestCount' => $this->posts->interestCountByPostId($postId),
+                'message' => 'Votre intérêt a été envoyé à l’annonceur.',
+            ]);
+            return;
+        }
+
         $_SESSION['success_posts_interest'] = 'Votre intérêt a été envoyé à l’annonceur.';
         $this->redirectBack($request, $response, '/posts');
     }
 
     public function addComment(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
@@ -439,20 +533,44 @@ final class PostController
         $postId = (int) $request->input('post_id', 0);
         $content = trim((string) $request->input('content', ''));
 
-        if ($postId <= 0 || strlen($content) < 2) {
-            $_SESSION['errors_comments'] = ['Commentaire invalide (minimum 2 caractères).'];
-            $this->redirectBack($request, $response, '/posts');
+        if ($postId <= 0) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Post introuvable.'
+            );
+            return;
+        }
+
+        if ($this->contentLength($content) < 2) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Le commentaire doit contenir au moins 2 caractères.'
+            );
             return;
         }
 
         $post = $this->posts->findById($postId);
         if ($post === null) {
-            $_SESSION['errors_comments'] = ['Post introuvable.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_comments', 'Post introuvable.');
             return;
         }
 
-        $this->comments->create($postId, $userId, $content);
+        $comment = $this->comments->create($postId, $userId, $content);
+        if ($comment === null) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Impossible d’ajouter le commentaire pour le moment.',
+                '/posts',
+                500
+            );
+            return;
+        }
 
         // NOTIF: notify post owner when someone else comments.
         if ((int) $post['user_id'] !== $userId) {
@@ -465,24 +583,74 @@ final class PostController
             );
         }
 
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'comment' => $this->commentPayload($comment, $userId),
+                'commentsCount' => $this->comments->countByPostId($postId),
+            ]);
+            return;
+        }
+
         $_SESSION['success_comments'] = 'Commentaire ajoute.';
         $this->redirectBack($request, $response, '/posts');
     }
 
-public function deleteComment(Request $request, Response $response): void
-{
-    $userId = $this->requireAuth($response);
-    if ($userId === null) {
-        return;
-    }
+    public function deleteComment(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
 
-    $commentId = (int) $request->input('comment_id', 0);
-    if ($commentId > 0) {
-        $this->comments->deleteByOwner($commentId, $userId);
-    }
+        $commentId = (int) $request->input('comment_id', 0);
+        if ($commentId <= 0) {
+            $this->respondInteractionError($request, $response, 'errors_comments', 'Commentaire introuvable.');
+            return;
+        }
 
-    $this->redirectBack($request, $response, '/posts');
-}
+        $comment = $this->comments->findById($commentId);
+        if ($comment === null) {
+            $this->respondInteractionError($request, $response, 'errors_comments', 'Commentaire introuvable.', '/posts', 404);
+            return;
+        }
+
+        if ((int) $comment['user_id'] !== $userId) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Vous ne pouvez supprimer que vos propres commentaires.',
+                '/posts',
+                403
+            );
+            return;
+        }
+
+        if (!$this->comments->deleteByOwner($commentId, $userId)) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Impossible de supprimer ce commentaire pour le moment.',
+                '/posts',
+                500
+            );
+            return;
+        }
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'commentId' => $commentId,
+                'postId' => (int) $comment['post_id'],
+                'commentsCount' => $this->comments->countByPostId((int) $comment['post_id']),
+            ]);
+            return;
+        }
+
+        $this->redirectBack($request, $response, '/posts');
+    }
 
 
     public function createForm(Response $response): void

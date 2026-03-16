@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Notifications</title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
-  <link rel="stylesheet" href="/css/notifications-index.css?v=20260315i">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/notifications-index.css?v=20260315o">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <section class="notifications-sheet" aria-label="Centre de notifications">
+      <section class="notifications-sheet" aria-label="Centre de notifications" data-notifications-scope>
         <header class="notifications-sheet__header">
           <div>
             <p class="notifications-sheet__eyebrow">Centre de notifications</p>
@@ -59,22 +59,28 @@
           </div>
 
           <div class="notifications-sheet__meta">
-            <span class="notifications-sheet__badge"><?= (int) $unreadCount ?> non lues</span>
-            <form method="post" action="/notifications/read-all">
+            <span class="notifications-sheet__badge" data-notifications-badge data-count-format="suffix"><?= (int) $unreadCount ?> non lues</span>
+            <form method="post" action="/notifications/read-all" data-notifications-mark-all-form>
               <button class="notifications-sheet__button" type="submit">Tout marquer comme lu</button>
             </form>
           </div>
         </header>
 
+        <p class="interaction-feedback is-error" data-interaction-feedback hidden></p>
+
         <?php if (empty($items)): ?>
-          <section class="notifications-empty">
+          <section class="notifications-empty" data-notifications-empty>
             <h2>Aucune notification</h2>
             <p>Ton centre de notifications se remplira dès qu’une interaction arrivera sur ton compte.</p>
           </section>
         <?php else: ?>
-          <section class="notifications-list">
+          <section class="notifications-list" data-notifications-list>
             <?php foreach ($items as $n): ?>
-              <article class="notification-card <?= ((int) $n['is_read'] === 0) ? 'is-unread' : '' ?>">
+              <article
+                class="notification-card <?= ((int) $n['is_read'] === 0) ? 'is-unread' : '' ?>"
+                data-notification-item
+                data-notification-id="<?= (int) $n['id'] ?>"
+              >
                 <div class="notification-card__head">
                   <div class="notification-card__type-wrap">
                     <span class="notification-card__dot"></span>
@@ -108,7 +114,7 @@
                     <a class="notification-card__open" href="<?= htmlspecialchars((string) $n['target_url'], ENT_QUOTES, 'UTF-8') ?>">Ouvrir</a>
 
                     <?php if ((int) $n['is_read'] === 0): ?>
-                      <form method="post" action="/notifications/read">
+                      <form method="post" action="/notifications/read" data-notification-read-form>
                         <input type="hidden" name="notification_id" value="<?= (int) $n['id'] ?>">
                         <button class="notification-card__read" type="submit">Marquer comme lu</button>
                       </form>

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('nav_search'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
-  <link rel="stylesheet" href="/css/search-index.css?v=20260315i">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/search-index.css?v=20260315o">
   <script src="/js/search-autocomplete.js" defer></script>
 </head>
 <body class="app-shell">
@@ -63,7 +63,7 @@
           <?php else: ?>
             <div class="search-grid">
               <?php foreach ($users as $user): ?>
-                <article class="search-result-card">
+                <article class="search-result-card" data-social-scope>
                   <div class="search-result-card__head">
                     <div class="search-result-card__avatar"><?= htmlspecialchars(strtoupper(substr((string) $user['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></div>
                     <div>
@@ -79,10 +79,16 @@
                     <?= htmlspecialchars((string) ($user['bio'] ?? $t->text('search_no_bio')), ENT_QUOTES, 'UTF-8') ?>
                   </p>
 
-                  <form method="post" action="/friends/send">
+                  <form method="post" action="/friends/send" data-friend-send-form>
                     <input type="hidden" name="username" value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit"><?= htmlspecialchars($t->text('search_send_request'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button
+                      type="submit"
+                      data-friend-send-button
+                      data-label-default="<?= htmlspecialchars($t->text('search_send_request'), ENT_QUOTES, 'UTF-8') ?>"
+                      data-label-sent="<?= htmlspecialchars($t->text('friends_request_sent'), ENT_QUOTES, 'UTF-8') ?>"
+                    ><?= htmlspecialchars($t->text('search_send_request'), ENT_QUOTES, 'UTF-8') ?></button>
                   </form>
+                  <p class="interaction-feedback" data-interaction-feedback hidden></p>
                 </article>
               <?php endforeach; ?>
             </div>

@@ -4,11 +4,15 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('home_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315m">
-  <link rel="stylesheet" href="/css/home.css?v=20260315m">
-  <link rel="stylesheet" href="/css/posts-index.css?v=20260315m">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/home.css?v=20260315n">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260315n">
 </head>
-<body class="app-shell">
+<body
+  class="app-shell"
+  data-post-interaction-error="<?= htmlspecialchars($t->text('posts_interaction_error'), ENT_QUOTES, 'UTF-8') ?>"
+  data-comment-delete-label="<?= htmlspecialchars($t->text('posts_delete_comment'), ENT_QUOTES, 'UTF-8') ?>"
+>
   <?php require dirname(__DIR__) . '/partials/app-navbar.php'; ?>
 
   <main class="content app-main">
@@ -58,5 +62,6 @@
     </div>
   </main>
   <?php require dirname(__DIR__) . '/partials/app-footer.php'; ?>
+  <script src="/js/post-interactions.js?v=20260316a" defer></script>
 </body>
 </html>

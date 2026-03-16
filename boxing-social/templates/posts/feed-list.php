@@ -42,8 +42,15 @@ $siteLogoPath = '/img/Bonlogo.png';
   <p><?= htmlspecialchars($t->text('posts_empty'), ENT_QUOTES, 'UTF-8') ?></p>
 <?php else: ?>
   <?php foreach ($feed as $post): ?>
+    <?php $postId = (int) $post['id']; ?>
     <?php $isTrainingPost = (($post['post_type'] ?? 'publication') === 'entrainement'); ?>
-    <article class="post <?= $isTrainingPost ? 'post--training' : 'post--publication' ?> <?= $feedContext === 'home' ? 'post--home' : 'post--feed' ?>">
+    <?php $currentUserId = $_SESSION['user']['id'] ?? null; ?>
+    <article
+      class="post <?= $isTrainingPost ? 'post--training' : 'post--publication' ?> <?= $feedContext === 'home' ? 'post--home' : 'post--feed' ?>"
+      data-post-card
+      data-interaction-scope
+      data-post-id="<?= $postId ?>"
+    >
       <div class="post__head">
         <div class="post__topline">
           <p class="post__type"><?= htmlspecialchars($isTrainingPost ? $t->text('posts_type_training') : $t->text('posts_type_publication'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -129,10 +136,9 @@ $siteLogoPath = '/img/Bonlogo.png';
         </div>
       </div>
 
-      <?php $currentUserId = $_SESSION['user']['id'] ?? null; ?>
       <?php if (($post['post_type'] ?? 'publication') === 'entrainement' && $currentUserId !== null && (int) $currentUserId !== (int) $post['user_id']): ?>
-        <?php $postInterestCount = (int) ($interestCountByPost[(int) $post['id']] ?? 0); ?>
-        <?php $alreadyInterested = (bool) ($interestedByCurrentUser[(int) $post['id']] ?? false); ?>
+        <?php $postInterestCount = (int) ($interestCountByPost[$postId] ?? 0); ?>
+        <?php $alreadyInterested = (bool) ($interestedByCurrentUser[$postId] ?? false); ?>
         <section class="post__training-cta">
           <div class="post__training-cta-copy">
             <p class="post__training-cta-title"><?= htmlspecialchars($t->text('training_interest_label'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -141,14 +147,14 @@ $siteLogoPath = '/img/Bonlogo.png';
             </p>
           </div>
 
-          <form method="post" action="/posts/interest" class="interest-form">
+          <form method="post" action="/posts/interest" class="interest-form" data-interest-form>
             <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
             <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($feedBasePath . '?page=' . (int) $currentPage, ENT_QUOTES, 'UTF-8') ?>">
-            <button type="submit" class="interest-button<?= $alreadyInterested ? ' is-active' : '' ?>" <?= $alreadyInterested ? 'disabled' : '' ?>>
+            <button type="submit" class="interest-button<?= $alreadyInterested ? ' is-active' : '' ?>" data-interest-button <?= $alreadyInterested ? 'disabled' : '' ?>>
               <span class="interest-button__icon">&#x270A;</span>
-              <span class="interest-button__count"><?= $postInterestCount ?></span>
+              <span class="interest-button__count" data-interest-count><?= $postInterestCount ?></span>
             </button>
-            <span class="interest-form__hint">
+            <span class="interest-form__hint" data-interest-hint>
               <?= htmlspecialchars($alreadyInterested ? $t->text('training_interest_sent') : $t->text('training_interest_action'), ENT_QUOTES, 'UTF-8') ?>
             </span>
           </form>
@@ -156,18 +162,22 @@ $siteLogoPath = '/img/Bonlogo.png';
       <?php endif; ?>
 
       <div class="post__actions">
-        <?php $postId = (int) $post['id']; ?>
         <?php $likesCount = (int) ($likesCountByPost[$postId] ?? 0); ?>
         <?php $isLiked = (bool) ($likedByCurrentUser[$postId] ?? false); ?>
 
         <div class="post__social">
-          <p class="post__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?></strong><span><?= $likesCount ?></span></p>
+          <p class="post__likes"><strong><?= htmlspecialchars($t->text('posts_likes'), ENT_QUOTES, 'UTF-8') ?></strong><span data-like-count><?= $likesCount ?></span></p>
 
           <?php if ($currentUserId !== null): ?>
-            <form method="post" action="/likes/toggle">
+            <form method="post" action="/likes/toggle" data-like-form>
               <input type="hidden" name="post_id" value="<?= $postId ?>">
               <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($feedBasePath . '?page=' . (int) $currentPage, ENT_QUOTES, 'UTF-8') ?>">
-              <button type="submit"><?= htmlspecialchars($isLiked ? $t->text('posts_like_remove') : $t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?></button>
+              <button
+                type="submit"
+                data-like-button
+                data-label-default="<?= htmlspecialchars($t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?>"
+                data-label-active="<?= htmlspecialchars($t->text('posts_like_remove'), ENT_QUOTES, 'UTF-8') ?>"
+              ><?= htmlspecialchars($isLiked ? $t->text('posts_like_remove') : $t->text('posts_like_add'), ENT_QUOTES, 'UTF-8') ?></button>
             </form>
           <?php endif; ?>
         </div>
@@ -183,27 +193,35 @@ $siteLogoPath = '/img/Bonlogo.png';
         <?php endif; ?>
       </div>
 
+      <p class="msg-error" data-interaction-feedback hidden></p>
+
       <div class="post__footer-row">
         <details class="post-comments">
           <summary>
             <?= htmlspecialchars($t->text('posts_comments'), ENT_QUOTES, 'UTF-8') ?>
-            <span class="post-comments__count">(<?= count($postComments = $commentsByPost[(int) $post['id']] ?? []) ?>)</span>
+            <span class="post-comments__count" data-comment-count data-count-format="parentheses">(<?= count($postComments = $commentsByPost[$postId] ?? []) ?>)</span>
           </summary>
 
           <div class="post-comments__body">
-            <?php if (empty($postComments)): ?>
-              <p class="post-comments__empty"><?= htmlspecialchars($t->text('posts_no_comments'), ENT_QUOTES, 'UTF-8') ?></p>
-            <?php else: ?>
+            <div
+              class="post-comments__list"
+              data-comment-list
+              data-empty-text="<?= htmlspecialchars($t->text('posts_no_comments'), ENT_QUOTES, 'UTF-8') ?>"
+            >
               <?php foreach ($postComments as $comment): ?>
-                <article class="comment">
+                <article class="comment" data-comment-id="<?= (int) $comment['id'] ?>">
                   <div class="comment__meta">
                     <div class="comment__authorline">
-                      <strong><?= htmlspecialchars((string) $comment['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                      <strong>
+                        <a href="/user?username=<?= rawurlencode((string) $comment['username']) ?>">
+                          <?= htmlspecialchars((string) $comment['username'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                      </strong>
                       <small><?= htmlspecialchars((string) $comment['created_at'], ENT_QUOTES, 'UTF-8') ?></small>
                     </div>
 
                     <?php if ($currentUserId !== null && (int) $currentUserId === (int) $comment['user_id']): ?>
-                      <form class="form-inline comment__delete" method="post" action="/comments/delete">
+                      <form class="comment__delete" method="post" action="/comments/delete" data-comment-delete-form>
                         <input type="hidden" name="comment_id" value="<?= (int) $comment['id'] ?>">
                         <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($feedBasePath . '?page=' . (int) $currentPage, ENT_QUOTES, 'UTF-8') ?>">
                         <button type="submit"><?= htmlspecialchars($t->text('posts_delete_comment'), ENT_QUOTES, 'UTF-8') ?></button>
@@ -214,11 +232,15 @@ $siteLogoPath = '/img/Bonlogo.png';
                   <p class="comment__text"><?= nl2br(htmlspecialchars((string) $comment['content'], ENT_QUOTES, 'UTF-8')) ?></p>
                 </article>
               <?php endforeach; ?>
-            <?php endif; ?>
+            </div>
+
+            <p class="post-comments__empty" data-comment-empty <?= empty($postComments) ? '' : 'hidden' ?>>
+              <?= htmlspecialchars($t->text('posts_no_comments'), ENT_QUOTES, 'UTF-8') ?>
+            </p>
 
             <?php if ($currentUserId !== null): ?>
-              <form class="post-comments__form" method="post" action="/comments">
-                <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
+              <form class="post-comments__form" method="post" action="/comments" data-comment-form>
+                <input type="hidden" name="post_id" value="<?= $postId ?>">
                 <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($feedBasePath . '?page=' . (int) $currentPage, ENT_QUOTES, 'UTF-8') ?>">
                 <textarea name="content" rows="2" cols="50" placeholder="<?= htmlspecialchars($t->text('posts_add_comment'), ENT_QUOTES, 'UTF-8') ?>" required></textarea>
                 <div class="post-comments__form-actions">
