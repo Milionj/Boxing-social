@@ -47,16 +47,41 @@ final class FriendshipController
      *
      * @return int|null ID user si connecté, sinon null
      */
-    private function requireAuth(Response $response): ?int
+    private function requireAuth(Response $response, ?Request $request = null): ?int
     {
         $id = $_SESSION['user']['id'] ?? null;
 
         if (!is_int($id)) {
+            if ($request?->expectsJson()) {
+                $response->json([
+                    'ok' => false,
+                    'message' => 'Connexion requise.',
+                ], 401);
+                return null;
+            }
+
             $response->redirect('/login');
             return null;
         }
 
         return $id;
+    }
+
+    private function friendshipCounts(int $userId): array
+    {
+        return [
+            'incoming' => count($this->friendships->incomingRequests($userId)),
+            'outgoing' => count($this->friendships->outgoingRequests($userId)),
+            'friends' => count($this->friendships->friendsOf($userId)),
+        ];
+    }
+
+    private function jsonError(Response $response, string $message, int $status = 422): void
+    {
+        $response->json([
+            'ok' => false,
+            'message' => $message,
+        ], $status);
     }
 
     /**
@@ -98,7 +123,7 @@ final class FriendshipController
     public function send(Request $request, Response $response): void
     {
         // Auth obligatoire
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
@@ -112,6 +137,11 @@ final class FriendshipController
         // - ID valide
         // - on ne peut pas s'ajouter soi-même
         if ($targetId <= 0 || $targetId === $userId) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Pseudo introuvable ou demande invalide.');
+                return;
+            }
+
             $_SESSION['errors_friends'] = ['Pseudo introuvable ou demande invalide.'];
             $response->redirect('/friends');
             return;
@@ -122,6 +152,11 @@ final class FriendshipController
 
         // Si échec (ex: doublon, contrainte SQL, etc.)
         if (!$ok) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Impossible d’envoyer la demande (déjà existante ?)');
+                return;
+            }
+
             $_SESSION['errors_friends'] = ['Impossible d’envoyer la demande (déjà existante ?)'];
             $response->redirect('/friends');
             return;
@@ -135,6 +170,29 @@ final class FriendshipController
             'Vous avez reçu une demande d’ami.'
         );
 
+        if ($request->expectsJson()) {
+            $outgoing = $this->friendships->outgoingRequests($userId);
+            $pending = null;
+            foreach ($outgoing as $item) {
+                if ((int) $item['addressee_id'] === $targetId) {
+                    $pending = $item;
+                    break;
+                }
+            }
+
+            $response->json([
+                'ok' => true,
+                'message' => 'Demande envoyée.',
+                'counts' => $this->friendshipCounts($userId),
+                'outgoing' => $pending === null ? null : [
+                    'id' => (int) $pending['id'],
+                    'username' => (string) $pending['addressee_username'],
+                    'profileUrl' => '/user?username=' . rawurlencode((string) $pending['addressee_username']),
+                ],
+            ]);
+            return;
+        }
+
         // Message flash succès + redirect
         $_SESSION['success_friends'] = 'Demande envoyée.';
         $response->redirect('/friends');
@@ -147,7 +205,7 @@ final class FriendshipController
     public function accept(Request $request, Response $response): void
     {
         // Auth obligatoire
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
@@ -156,6 +214,11 @@ final class FriendshipController
         $id = (int) $request->input('friendship_id', 0);
 
         if ($id <= 0) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Demande introuvable.');
+                return;
+            }
+
             $_SESSION['errors_friends'] = ['Demande introuvable.'];
             $response->redirect('/friends');
             return;
@@ -163,18 +226,44 @@ final class FriendshipController
 
         $incoming = $this->friendships->incomingRequests($userId);
         $actorId = null;
+        $acceptedFriend = null;
         foreach ($incoming as $req) {
             if ((int) $req['id'] === $id) {
                 $actorId = (int) $req['requester_id'];
+                $acceptedFriend = [
+                    'id' => $actorId,
+                    'username' => (string) $req['requester_username'],
+                    'profileUrl' => '/user?username=' . rawurlencode((string) $req['requester_username']),
+                ];
                 break;
             }
+        }
+
+        if ($acceptedFriend === null) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Demande introuvable.', 404);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Demande introuvable.'];
+            $response->redirect('/friends');
+            return;
         }
 
         // Le modèle vérifie que :
         // - l'utilisateur connecté est bien le destinataire
         // - la demande est en "pending"
         // - le status demandé est autorisé ("accepted")
-        $this->friendships->updateStatusByAddressee($id, $userId, 'accepted');
+        if (!$this->friendships->updateStatusByAddressee($id, $userId, 'accepted')) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Impossible d’accepter cette demande.', 500);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Impossible d’accepter cette demande.'];
+            $response->redirect('/friends');
+            return;
+        }
 
         if ($actorId !== null) {
             $this->notifications->create(
@@ -184,6 +273,17 @@ final class FriendshipController
                 null,
                 'Votre demande d’ami a été acceptée.'
             );
+        }
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'message' => 'Demande acceptée.',
+                'friendshipId' => $id,
+                'counts' => $this->friendshipCounts($userId),
+                'friend' => $acceptedFriend,
+            ]);
+            return;
         }
 
         $_SESSION['success_friends'] = 'Demande acceptée.';
@@ -197,7 +297,7 @@ final class FriendshipController
     public function decline(Request $request, Response $response): void
     {
         // Auth obligatoire
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
@@ -206,13 +306,37 @@ final class FriendshipController
         $id = (int) $request->input('friendship_id', 0);
 
         if ($id <= 0) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Demande introuvable.');
+                return;
+            }
+
             $_SESSION['errors_friends'] = ['Demande introuvable.'];
             $response->redirect('/friends');
             return;
         }
 
         // Le modèle applique la mise à jour conditionnelle vers "declined"
-        $this->friendships->updateStatusByAddressee($id, $userId, 'declined');
+        if (!$this->friendships->updateStatusByAddressee($id, $userId, 'declined')) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Impossible de refuser cette demande.', 500);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Impossible de refuser cette demande.'];
+            $response->redirect('/friends');
+            return;
+        }
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'message' => 'Demande refusée.',
+                'friendshipId' => $id,
+                'counts' => $this->friendshipCounts($userId),
+            ]);
+            return;
+        }
 
         $_SESSION['success_friends'] = 'Demande refusée.';
         $response->redirect('/friends');

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('post_show_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315n">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
   <link rel="stylesheet" href="/css/post-show.css?v=20260315n">
 </head>
 <body
@@ -122,14 +122,14 @@
               </p>
             </div>
 
-            <form method="post" action="/posts/interest" class="interest-form">
+            <form method="post" action="/posts/interest" class="interest-form" data-interest-form>
               <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
               <input type="hidden" name="redirect_to" value="/post?id=<?= (int) $post['id'] ?>">
-              <button type="submit" class="interest-button<?= $isInterested ? ' is-active' : '' ?>" <?= $isInterested ? 'disabled' : '' ?>>
+              <button type="submit" class="interest-button<?= $isInterested ? ' is-active' : '' ?>" data-interest-button <?= $isInterested ? 'disabled' : '' ?>>
                 <span class="interest-button__icon">&#x270A;</span>
-                <span class="interest-button__count"><?= (int) $interestCount ?></span>
+                <span class="interest-button__count" data-interest-count><?= (int) $interestCount ?></span>
               </button>
-              <span class="interest-form__hint">
+              <span class="interest-form__hint" data-interest-hint>
                 <?= htmlspecialchars($isInterested ? $t->text('training_interest_sent') : $t->text('training_interest_action'), ENT_QUOTES, 'UTF-8') ?>
               </span>
             </form>
@@ -216,6 +216,6 @@
     </section>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/post-interactions.js?v=20260315n" defer></script>
+  <script src="/js/post-interactions.js?v=20260316a" defer></script>
 </body>
 </html>

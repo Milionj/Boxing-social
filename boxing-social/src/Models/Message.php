@@ -113,6 +113,43 @@ final class Message
         return $stmt->fetchAll() ?: [];
     }
 
+    public function findById(int $messageId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, sender_id, receiver_id, content, is_read, created_at
+             FROM messages
+             WHERE id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $messageId]);
+
+        $message = $stmt->fetch();
+
+        return $message ?: null;
+    }
+
+    public function create(int $senderId, int $receiverId, string $content): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO messages (sender_id, receiver_id, content, is_read)
+             VALUES (:sender_id, :receiver_id, :content, 0)'
+        );
+
+        $ok = $stmt->execute([
+            'sender_id' => $senderId,
+            'receiver_id' => $receiverId,
+            'content' => $content,
+        ]);
+
+        if (!$ok) {
+            return null;
+        }
+
+        $messageId = (int) $this->pdo->lastInsertId();
+
+        return $messageId > 0 ? $this->findById($messageId) : null;
+    }
+
     /**
      * Envoie un message (création en base).
      *
@@ -120,16 +157,7 @@ final class Message
      */
     public function send(int $senderId, int $receiverId, string $content): bool
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO messages (sender_id, receiver_id, content, is_read)
-             VALUES (:sender_id, :receiver_id, :content, 0)'
-        );
-
-        return $stmt->execute([
-            'sender_id' => $senderId,
-            'receiver_id' => $receiverId,
-            'content' => $content,
-        ]);
+        return $this->create($senderId, $receiverId, $content) !== null;
     }
 
     /**

@@ -167,12 +167,14 @@ final class Friendship
         // - id = la bonne demande
         // - addressee_id = le user connecté est bien le destinataire
         // - status = pending (on ne re-traite pas une demande déjà acceptée/refusée)
-        return $stmt->execute([
+        $stmt->execute([
             'status' => $status,
             'id' => $friendshipId,
             'addressee_id' => $addresseeId,
             'pending' => 'pending',
         ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     /**

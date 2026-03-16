@@ -429,39 +429,50 @@ final class PostController
 
     public function expressInterest(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
 
         $postId = (int) $request->input('post_id', 0);
         if ($postId <= 0) {
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_posts_interest', 'Séance introuvable.');
             return;
         }
 
         $post = $this->posts->findDetailedById($postId);
         if ($post === null) {
-            $_SESSION['errors_posts_interest'] = ['Séance introuvable.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError($request, $response, 'errors_posts_interest', 'Séance introuvable.');
             return;
         }
 
         if (($post['post_type'] ?? 'publication') !== 'entrainement') {
-            $_SESSION['errors_posts_interest'] = ['Cette action est réservée aux déclarations de séances.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Cette action est réservée aux déclarations de séances.'
+            );
             return;
         }
 
         if ((int) $post['user_id'] === $userId) {
-            $_SESSION['errors_posts_interest'] = ['Vous ne pouvez pas manifester votre intérêt sur votre propre séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous ne pouvez pas manifester votre intérêt sur votre propre séance.'
+            );
             return;
         }
 
         if ($this->posts->hasInterestByUser($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous avez déjà manifesté votre intérêt pour cette séance.'
+            );
             return;
         }
 
@@ -469,14 +480,24 @@ final class PostController
         $content = $this->buildTrainingInterestMessage($post, $username);
 
         if (!$this->posts->addInterest($postId, $userId)) {
-            $_SESSION['errors_posts_interest'] = ['Vous avez déjà manifesté votre intérêt pour cette séance.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Vous avez déjà manifesté votre intérêt pour cette séance.'
+            );
             return;
         }
 
         if (!$this->messages->send($userId, (int) $post['user_id'], $content)) {
-            $_SESSION['errors_posts_interest'] = ['Impossible d’envoyer votre intérêt pour le moment.'];
-            $this->redirectBack($request, $response, '/posts');
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_posts_interest',
+                'Impossible d’envoyer votre intérêt pour le moment.',
+                '/posts',
+                500
+            );
             return;
         }
 
@@ -487,6 +508,16 @@ final class PostController
             null,
             'Un utilisateur a manifesté son intérêt pour votre séance.'
         );
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'interested' => true,
+                'interestCount' => $this->posts->interestCountByPostId($postId),
+                'message' => 'Votre intérêt a été envoyé à l’annonceur.',
+            ]);
+            return;
+        }
 
         $_SESSION['success_posts_interest'] = 'Votre intérêt a été envoyé à l’annonceur.';
         $this->redirectBack($request, $response, '/posts');
@@ -502,12 +533,22 @@ final class PostController
         $postId = (int) $request->input('post_id', 0);
         $content = trim((string) $request->input('content', ''));
 
-        if ($postId <= 0 || $this->contentLength($content) < 2) {
+        if ($postId <= 0) {
             $this->respondInteractionError(
                 $request,
                 $response,
                 'errors_comments',
-                'Commentaire invalide (minimum 2 caractères).'
+                'Post introuvable.'
+            );
+            return;
+        }
+
+        if ($this->contentLength($content) < 2) {
+            $this->respondInteractionError(
+                $request,
+                $response,
+                'errors_comments',
+                'Le commentaire doit contenir au moins 2 caractères.'
             );
             return;
         }

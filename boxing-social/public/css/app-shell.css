@@ -587,6 +587,25 @@ body.app-shell[data-theme="clair"] .app-topbar__user {
   background: rgba(255, 255, 255, 0.12);
 }
 
+.interaction-feedback {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  line-height: 1.5;
+}
+
+.interaction-feedback.is-error {
+  color: #ffd8d3;
+  background: rgba(180, 53, 36, 0.18);
+  border: 1px solid rgba(187, 73, 61, 0.28);
+}
+
+.interaction-feedback.is-success {
+  color: #def6e5;
+  background: rgba(50, 120, 74, 0.18);
+  border: 1px solid rgba(80, 170, 110, 0.26);
+}
+
 .scroll-top {
   position: fixed;
   right: 26px;

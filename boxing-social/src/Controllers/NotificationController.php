@@ -40,11 +40,19 @@ final class NotificationController
      *
      * @return int|null ID utilisateur si connecté, sinon null
      */
-    private function requireAuth(Response $response): ?int
+    private function requireAuth(Response $response, ?Request $request = null): ?int
     {
         $id = $_SESSION['user']['id'] ?? null;
 
         if (!is_int($id)) {
+            if ($request?->expectsJson()) {
+                $response->json([
+                    'ok' => false,
+                    'message' => 'Connexion requise.',
+                ], 401);
+                return null;
+            }
+
             $response->redirect('/login');
             return null;
         }
@@ -105,7 +113,7 @@ final class NotificationController
      */
     public function markRead(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
@@ -114,9 +122,29 @@ final class NotificationController
         $id = (int) $request->input('notification_id', 0);
 
         // Validation minimale : ID > 0
-        if ($id > 0) {
-            // Sécurité gérée aussi dans le modèle (WHERE id = :id AND user_id = :user_id)
-            $this->notifications->markReadByOwner($id, $userId);
+        if ($id <= 0) {
+            if ($request->expectsJson()) {
+                $response->json([
+                    'ok' => false,
+                    'message' => 'Notification introuvable.',
+                ], 422);
+                return;
+            }
+
+            $this->redirectBack($request, $response);
+            return;
+        }
+
+        // Sécurité gérée aussi dans le modèle (WHERE id = :id AND user_id = :user_id)
+        $this->notifications->markReadByOwner($id, $userId);
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'notificationId' => $id,
+                'unreadCount' => $this->notifications->unreadCount($userId),
+            ]);
+            return;
         }
 
         // Redirection (pattern PRG : POST -> Redirect -> GET)
@@ -129,12 +157,20 @@ final class NotificationController
      */
     public function markAllRead(Request $request, Response $response): void
     {
-        $userId = $this->requireAuth($response);
+        $userId = $this->requireAuth($response, $request);
         if ($userId === null) {
             return;
         }
 
         $this->notifications->markAllRead($userId);
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'unreadCount' => 0,
+            ]);
+            return;
+        }
 
         // Retour à la page courante ou au centre de notifications.
         $this->redirectBack($request, $response);

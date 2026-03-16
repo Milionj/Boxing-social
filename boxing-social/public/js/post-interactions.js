@@ -7,6 +7,9 @@
   const defaultErrorMessage =
     body.dataset.postInteractionError || 'Impossible de mettre à jour l’interaction pour le moment.';
   const deleteCommentLabel = body.dataset.commentDeleteLabel || 'Supprimer commentaire';
+  const socialI18n = document.querySelector('[data-social-i18n]');
+  const trainingInterestAction = socialI18n?.dataset.trainingInterestAction || 'Cliquer sur le poing pour manifester votre intérêt';
+  const trainingInterestSent = socialI18n?.dataset.trainingInterestSent || 'Intérêt déjà envoyé';
 
   const requestHeaders = {
     Accept: 'application/json',
@@ -34,16 +37,23 @@
     if (target.matches('[data-comment-delete-form]')) {
       event.preventDefault();
       void handleCommentDelete(target);
+      return;
+    }
+
+    if (target.matches('[data-interest-form]')) {
+      event.preventDefault();
+      void handleInterestSubmit(target);
     }
   });
 
   async function handleLikeSubmit(form) {
     const scope = findInteractionScope(form);
+    const formData = new FormData(form);
     clearFeedback(scope);
     setFormPending(form, true);
 
     try {
-      const payload = await requestJson(form);
+      const payload = await requestJson(form, formData);
       if (!payload) {
         return;
       }
@@ -69,11 +79,12 @@
   async function handleCommentSubmit(form) {
     const scope = findInteractionScope(form);
     const textarea = form.querySelector('textarea[name="content"]');
+    const formData = new FormData(form);
     clearFeedback(scope);
     setFormPending(form, true);
 
     try {
-      const payload = await requestJson(form);
+      const payload = await requestJson(form, formData);
       if (!payload) {
         return;
       }
@@ -109,11 +120,12 @@
   async function handleCommentDelete(form) {
     const scope = findInteractionScope(form);
     const commentElement = form.closest('[data-comment-id]');
+    const formData = new FormData(form);
     clearFeedback(scope);
     setFormPending(form, true);
 
     try {
-      const payload = await requestJson(form);
+      const payload = await requestJson(form, formData);
       if (!payload) {
         return;
       }
@@ -135,10 +147,46 @@
     }
   }
 
-  async function requestJson(form) {
+  async function handleInterestSubmit(form) {
+    const scope = findInteractionScope(form);
+    const formData = new FormData(form);
+    clearFeedback(scope);
+    setFormPending(form, true);
+
+    try {
+      const payload = await requestJson(form, formData);
+      if (!payload) {
+        return;
+      }
+
+      const countElement = form.querySelector('[data-interest-count]');
+      if (countElement) {
+        setCountText(countElement, payload.interestCount);
+      }
+
+      const hint = form.querySelector('[data-interest-hint]');
+      if (hint instanceof HTMLElement) {
+        hint.textContent = payload.interested ? trainingInterestSent : trainingInterestAction;
+      }
+
+      const button = form.querySelector('[data-interest-button]');
+      if (button instanceof HTMLButtonElement) {
+        button.classList.toggle('is-active', Boolean(payload.interested));
+        button.disabled = Boolean(payload.interested);
+      }
+    } catch (error) {
+      showFeedback(scope, resolveErrorMessage(error));
+    } finally {
+      setFormPending(form, false, {
+        keepButtonsDisabled: form.querySelector('[data-interest-button]')?.disabled === true,
+      });
+    }
+  }
+
+  async function requestJson(form, body) {
     const response = await fetch(form.action, {
       method: (form.method || 'POST').toUpperCase(),
-      body: new FormData(form),
+      body: body || new FormData(form),
       headers: requestHeaders,
     });
 
@@ -257,7 +305,7 @@
     feedback.hidden = true;
   }
 
-  function setFormPending(form, pending) {
+  function setFormPending(form, pending, options = {}) {
     const elements = form.querySelectorAll('button, textarea');
     elements.forEach((element) => {
       if (!(element instanceof HTMLButtonElement || element instanceof HTMLTextAreaElement)) {
@@ -267,6 +315,11 @@
       if (pending) {
         element.dataset.wasDisabled = element.disabled ? '1' : '0';
         element.disabled = true;
+        return;
+      }
+
+      if (element instanceof HTMLButtonElement && options.keepButtonsDisabled) {
+        delete element.dataset.wasDisabled;
         return;
       }
 

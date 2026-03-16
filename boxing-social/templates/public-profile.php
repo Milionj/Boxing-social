@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('public_profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315i">
-  <link rel="stylesheet" href="/css/public-profile.css?v=20260315i">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/public-profile.css?v=20260315o">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/templates/partials/app-navbar.php'; ?>
@@ -30,15 +30,21 @@
           <p class="public-profile-summary__meta"><?= htmlspecialchars($t->text('public_profile_member_since'), ENT_QUOTES, 'UTF-8') ?> : <?= htmlspecialchars((string) $user['created_at'], ENT_QUOTES, 'UTF-8') ?></p>
         </div>
 
-        <div class="public-profile-summary__actions">
-          <form method="post" action="/friends/send">
+        <div class="public-profile-summary__actions" data-social-scope>
+          <form method="post" action="/friends/send" data-friend-send-form>
             <input type="hidden" name="username" value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
-            <button type="submit"><?= htmlspecialchars($t->text('public_profile_add_friend'), ENT_QUOTES, 'UTF-8') ?></button>
+            <button
+              type="submit"
+              data-friend-send-button
+              data-label-default="<?= htmlspecialchars($t->text('public_profile_add_friend'), ENT_QUOTES, 'UTF-8') ?>"
+              data-label-sent="<?= htmlspecialchars($t->text('friends_request_sent'), ENT_QUOTES, 'UTF-8') ?>"
+            ><?= htmlspecialchars($t->text('public_profile_add_friend'), ENT_QUOTES, 'UTF-8') ?></button>
           </form>
           <form method="get" action="/messages">
             <input type="hidden" name="username" value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
             <button class="button-secondary" type="submit"><?= htmlspecialchars($t->text('public_profile_send_message'), ENT_QUOTES, 'UTF-8') ?></button>
           </form>
+          <p class="interaction-feedback" data-interaction-feedback hidden></p>
         </div>
       </aside>
 

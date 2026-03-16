@@ -5,6 +5,7 @@ declare(strict_types=1);
   id="notifications-drawer"
   class="notifications-drawer<?= $navNotificationsRequested ? ' is-open' : '' ?>"
   data-notifications-drawer
+  data-notifications-scope
   data-open="<?= $navNotificationsRequested ? '1' : '0' ?>"
   data-close-url="<?= htmlspecialchars($navNotificationsCloseUrl, ENT_QUOTES, 'UTF-8') ?>"
   aria-hidden="<?= $navNotificationsRequested ? 'false' : 'true' ?>"
@@ -21,9 +22,9 @@ declare(strict_types=1);
   </div>
 
   <div class="notifications-drawer__toolbar">
-    <span class="notifications-drawer__badge"><?= $navUnreadNotificationsTotal ?> <?= htmlspecialchars($t->text('notifications_unread_count_suffix'), ENT_QUOTES, 'UTF-8') ?></span>
+    <span class="notifications-drawer__badge" data-notifications-badge data-count-format="suffix"><?= $navUnreadNotificationsTotal ?> <?= htmlspecialchars($t->text('notifications_unread_count_suffix'), ENT_QUOTES, 'UTF-8') ?></span>
 
-    <form method="post" action="/notifications/read-all">
+    <form method="post" action="/notifications/read-all" data-notifications-mark-all-form>
       <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($navNotificationsPanelUrl, ENT_QUOTES, 'UTF-8') ?>">
       <button class="notifications-drawer__mark-all" type="submit">
         <?= htmlspecialchars($t->text('notifications_mark_all'), ENT_QUOTES, 'UTF-8') ?>
@@ -31,14 +32,20 @@ declare(strict_types=1);
     </form>
   </div>
 
+  <p class="interaction-feedback is-error" data-interaction-feedback hidden></p>
+
   <?php if ($navNotificationItems === []): ?>
-    <div class="notifications-drawer__empty">
+    <div class="notifications-drawer__empty" data-notifications-empty>
       <p><?= htmlspecialchars($t->text('notifications_empty'), ENT_QUOTES, 'UTF-8') ?></p>
     </div>
   <?php else: ?>
-    <div class="notifications-drawer__list">
+    <div class="notifications-drawer__list" data-notifications-list>
       <?php foreach ($navNotificationItems as $notification): ?>
-        <article class="notifications-drawer__item<?= ((int) $notification['is_read'] === 0) ? ' is-unread' : '' ?>">
+        <article
+          class="notifications-drawer__item<?= ((int) $notification['is_read'] === 0) ? ' is-unread' : '' ?>"
+          data-notification-item
+          data-notification-id="<?= (int) $notification['id'] ?>"
+        >
           <div class="notifications-drawer__item-head">
             <strong><?= htmlspecialchars((string) $notification['type'], ENT_QUOTES, 'UTF-8') ?></strong>
             <time><?= htmlspecialchars((string) $notification['created_at'], ENT_QUOTES, 'UTF-8') ?></time>
@@ -67,7 +74,7 @@ declare(strict_types=1);
               </a>
 
               <?php if ((int) $notification['is_read'] === 0): ?>
-                <form method="post" action="/notifications/read">
+                <form method="post" action="/notifications/read" data-notification-read-form>
                   <input type="hidden" name="notification_id" value="<?= (int) $notification['id'] ?>">
                   <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($navNotificationsPanelUrl, ENT_QUOTES, 'UTF-8') ?>">
                   <button class="notifications-drawer__read" type="submit">

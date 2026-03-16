@@ -146,7 +146,7 @@ $topbarTitle = match (true) {
       >
         <span><?= htmlspecialchars($t->text('nav_notifications'), ENT_QUOTES, 'UTF-8') ?></span>
         <?php if ($navNotificationsEnabled && $navUnreadNotifications > 0): ?>
-          <span class="app-sidebar__count"><?= $navUnreadNotifications ?></span>
+          <span class="app-sidebar__count" data-notifications-nav-count><?= $navUnreadNotifications ?></span>
         <?php endif; ?>
       </a>
       <a class="app-sidebar__link<?= $matchesPath('/search', $currentPath) ? ' is-active' : '' ?>" href="/search">
