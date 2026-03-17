@@ -31,6 +31,11 @@ if (is_int($_SESSION['user']['id'] ?? null)) {
     }
 }
 
+$navNotificationPresenter = new \App\Services\NotificationService();
+if ($navNotificationItems !== []) {
+    $navNotificationItems = $navNotificationPresenter->presentMany($navNotificationItems, $t);
+}
+
 $currentPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
 $currentQuery = trim((string) ($_GET['q'] ?? ''));
 $isHomePage = ($currentPath === '/');
@@ -43,31 +48,6 @@ $matchesPath = static function (string $path, string $currentPath): bool {
 
     return $currentPath === $path || str_starts_with($currentPath, $path . '/');
 };
-
-$resolveNotificationUrl = static function (array $notification): string {
-    $type = (string) ($notification['type'] ?? '');
-    $entityId = (int) ($notification['entity_id'] ?? 0);
-    $actorUsername = (string) ($notification['actor_username'] ?? '');
-
-    if (($type === 'like' || $type === 'comment') && $entityId > 0) {
-        return '/post?id=' . $entityId;
-    }
-
-    if ($type === 'message') {
-        return $actorUsername !== '' ? '/messages?username=' . rawurlencode($actorUsername) : '/messages';
-    }
-
-    if ($type === 'friend_request' || $type === 'friend_accept') {
-        return $actorUsername !== '' ? '/user?username=' . rawurlencode($actorUsername) : '/friends';
-    }
-
-    return '/notifications';
-};
-
-foreach ($navNotificationItems as &$navNotificationItem) {
-    $navNotificationItem['target_url'] = $resolveNotificationUrl($navNotificationItem);
-}
-unset($navNotificationItem);
 
 $buildNotificationsPanelUrl = static function (string $requestUri, bool $open): string {
     $path = (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/');

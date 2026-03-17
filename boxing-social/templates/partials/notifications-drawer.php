@@ -45,14 +45,15 @@ declare(strict_types=1);
           class="notifications-drawer__item<?= ((int) $notification['is_read'] === 0) ? ' is-unread' : '' ?>"
           data-notification-item
           data-notification-id="<?= (int) $notification['id'] ?>"
+          data-notification-open-url="<?= htmlspecialchars((string) ($notification['open_url'] ?? $notification['target_url'] ?? '/notifications'), ENT_QUOTES, 'UTF-8') ?>"
         >
           <div class="notifications-drawer__item-head">
-            <strong><?= htmlspecialchars((string) $notification['type'], ENT_QUOTES, 'UTF-8') ?></strong>
+            <strong><?= htmlspecialchars((string) ($notification['display_type'] ?? $notification['type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
             <time><?= htmlspecialchars((string) $notification['created_at'], ENT_QUOTES, 'UTF-8') ?></time>
           </div>
 
           <p class="notifications-drawer__item-content">
-            <?= htmlspecialchars((string) ($notification['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+            <?= htmlspecialchars((string) ($notification['display_content'] ?? $notification['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
           </p>
 
           <div class="notifications-drawer__item-foot">
@@ -69,7 +70,7 @@ declare(strict_types=1);
             </p>
 
             <div class="notifications-drawer__actions">
-              <a class="notifications-drawer__open" href="<?= htmlspecialchars((string) $notification['target_url'], ENT_QUOTES, 'UTF-8') ?>">
+              <a class="notifications-drawer__open" href="<?= htmlspecialchars((string) ($notification['open_url'] ?? $notification['target_url'] ?? '/notifications'), ENT_QUOTES, 'UTF-8') ?>">
                 <?= htmlspecialchars($t->text('notifications_open'), ENT_QUOTES, 'UTF-8') ?>
               </a>
 

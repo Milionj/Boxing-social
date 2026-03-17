@@ -135,6 +135,27 @@ final class Friendship
     }
 
     /**
+     * Permet à l'émetteur d'annuler une demande encore en attente.
+     */
+    public function cancelPendingByRequester(int $friendshipId, int $requesterId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM friendships
+             WHERE id = :id
+               AND requester_id = :requester_id
+               AND status = :pending'
+        );
+
+        $stmt->execute([
+            'id' => $friendshipId,
+            'requester_id' => $requesterId,
+            'pending' => 'pending',
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * Permet au destinataire de répondre à une demande (accepter / refuser).
      *
      * Règles appliquées ici :
@@ -190,7 +211,7 @@ final class Friendship
     public function friendsOf(int $userId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT u.id, u.username
+            'SELECT f.id AS friendship_id, u.id, u.username
              FROM friendships f
              INNER JOIN users u
                 ON (u.id = f.requester_id AND f.addressee_id = :uid_a)
@@ -208,6 +229,27 @@ final class Friendship
         ]);
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * Supprime une relation déjà acceptée pour l'un des deux membres.
+     */
+    public function removeAcceptedByUser(int $friendshipId, int $userId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM friendships
+             WHERE id = :id
+               AND status = :accepted
+               AND (requester_id = :user_a OR addressee_id = :user_b)'
+        );
+
+        $stmt->execute([
+            'id' => $friendshipId,
+            'user_a' => $userId,
+            'user_b' => $userId,
+        ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     private function requestExistsBetween(int $userA, int $userB): bool

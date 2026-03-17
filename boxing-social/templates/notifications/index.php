@@ -1,10 +1,14 @@
 <?php require dirname(__DIR__, 2) . '/templates/partials/app-locale.php'; ?>
+<?php
+$notificationPresenter = new \App\Services\NotificationService();
+$items = $notificationPresenter->presentMany($items, $t);
+?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Notifications</title>
+  <title><?= htmlspecialchars($t->text('notifications_page_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
   <link rel="stylesheet" href="/css/notifications-index.css?v=20260315o">
 </head>
@@ -15,53 +19,53 @@
     <section class="notifications-scene">
       <div class="notifications-backdrop">
         <a class="notifications-backdrop__card notifications-backdrop__card--active" href="/">
-          <span class="notifications-backdrop__eyebrow">Navigation rapide</span>
-          <strong>Accueil</strong>
-          <p>Reviens sur le fil, les séances et les publications récentes.</p>
+          <span class="notifications-backdrop__eyebrow"><?= htmlspecialchars($t->text('notifications_page_quick_nav'), ENT_QUOTES, 'UTF-8') ?></span>
+          <strong><?= htmlspecialchars($t->text('home_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+          <p><?= htmlspecialchars($t->text('notifications_page_home_text'), ENT_QUOTES, 'UTF-8') ?></p>
         </a>
 
         <a class="notifications-backdrop__card" href="/friends">
-          <span class="notifications-backdrop__eyebrow">Raccourci</span>
-          <strong>Amis</strong>
-          <p>Consulte tes demandes reçues, les invitations envoyées et ton réseau.</p>
+          <span class="notifications-backdrop__eyebrow"><?= htmlspecialchars($t->text('notifications_page_shortcut'), ENT_QUOTES, 'UTF-8') ?></span>
+          <strong><?= htmlspecialchars($t->text('nav_friends'), ENT_QUOTES, 'UTF-8') ?></strong>
+          <p><?= htmlspecialchars($t->text('notifications_page_friends_text'), ENT_QUOTES, 'UTF-8') ?></p>
         </a>
 
         <a class="notifications-backdrop__card" href="/posts">
-          <span class="notifications-backdrop__eyebrow">Raccourci</span>
-          <strong>Publications</strong>
-          <p>Ouvre le fil complet pour commenter, aimer et parcourir les posts.</p>
+          <span class="notifications-backdrop__eyebrow"><?= htmlspecialchars($t->text('notifications_page_shortcut'), ENT_QUOTES, 'UTF-8') ?></span>
+          <strong><?= htmlspecialchars($t->text('posts_heading'), ENT_QUOTES, 'UTF-8') ?></strong>
+          <p><?= htmlspecialchars($t->text('notifications_page_posts_text'), ENT_QUOTES, 'UTF-8') ?></p>
         </a>
 
         <a class="notifications-backdrop__card" href="/search">
-          <span class="notifications-backdrop__eyebrow">Raccourci</span>
-          <strong>Recherche</strong>
-          <p>Retrouve rapidement un pseudo, une publication ou un sujet précis.</p>
+          <span class="notifications-backdrop__eyebrow"><?= htmlspecialchars($t->text('notifications_page_shortcut'), ENT_QUOTES, 'UTF-8') ?></span>
+          <strong><?= htmlspecialchars($t->text('nav_search'), ENT_QUOTES, 'UTF-8') ?></strong>
+          <p><?= htmlspecialchars($t->text('notifications_page_search_text'), ENT_QUOTES, 'UTF-8') ?></p>
         </a>
 
         <div class="notifications-backdrop__stats">
           <article class="notifications-backdrop__stat">
-            <span>Non lues</span>
+            <span><?= htmlspecialchars($t->text('notifications_page_stats_unread'), ENT_QUOTES, 'UTF-8') ?></span>
             <strong><?= (int) $unreadCount ?></strong>
           </article>
           <article class="notifications-backdrop__stat">
-            <span>Total affiché</span>
+            <span><?= htmlspecialchars($t->text('notifications_page_stats_total'), ENT_QUOTES, 'UTF-8') ?></span>
             <strong><?= count($items) ?></strong>
           </article>
         </div>
       </div>
 
-      <section class="notifications-sheet" aria-label="Centre de notifications" data-notifications-scope>
+      <section class="notifications-sheet" aria-label="<?= htmlspecialchars($t->text('notifications_drawer_label'), ENT_QUOTES, 'UTF-8') ?>" data-notifications-scope>
         <header class="notifications-sheet__header">
           <div>
-            <p class="notifications-sheet__eyebrow">Centre de notifications</p>
-            <h1>Notifications</h1>
-            <p class="notifications-sheet__intro">Retrouve ici les interactions récentes et ouvre directement la bonne page.</p>
+            <p class="notifications-sheet__eyebrow"><?= htmlspecialchars($t->text('notifications_drawer_label'), ENT_QUOTES, 'UTF-8') ?></p>
+            <h1><?= htmlspecialchars($t->text('nav_notifications'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <p class="notifications-sheet__intro"><?= htmlspecialchars($t->text('notifications_page_intro'), ENT_QUOTES, 'UTF-8') ?></p>
           </div>
 
           <div class="notifications-sheet__meta">
-            <span class="notifications-sheet__badge" data-notifications-badge data-count-format="suffix"><?= (int) $unreadCount ?> non lues</span>
+            <span class="notifications-sheet__badge" data-notifications-badge data-count-format="suffix"><?= (int) $unreadCount ?> <?= htmlspecialchars($t->text('notifications_unread_count_suffix'), ENT_QUOTES, 'UTF-8') ?></span>
             <form method="post" action="/notifications/read-all" data-notifications-mark-all-form>
-              <button class="notifications-sheet__button" type="submit">Tout marquer comme lu</button>
+              <button class="notifications-sheet__button" type="submit"><?= htmlspecialchars($t->text('notifications_mark_all'), ENT_QUOTES, 'UTF-8') ?></button>
             </form>
           </div>
         </header>
@@ -70,8 +74,8 @@
 
         <?php if (empty($items)): ?>
           <section class="notifications-empty" data-notifications-empty>
-            <h2>Aucune notification</h2>
-            <p>Ton centre de notifications se remplira dès qu’une interaction arrivera sur ton compte.</p>
+            <h2><?= htmlspecialchars($t->text('notifications_page_empty_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+            <p><?= htmlspecialchars($t->text('notifications_page_empty_text'), ENT_QUOTES, 'UTF-8') ?></p>
           </section>
         <?php else: ?>
           <section class="notifications-list" data-notifications-list>
@@ -80,12 +84,13 @@
                 class="notification-card <?= ((int) $n['is_read'] === 0) ? 'is-unread' : '' ?>"
                 data-notification-item
                 data-notification-id="<?= (int) $n['id'] ?>"
+                data-notification-open-url="<?= htmlspecialchars((string) ($n['open_url'] ?? $n['target_url'] ?? '/notifications'), ENT_QUOTES, 'UTF-8') ?>"
               >
                 <div class="notification-card__head">
                   <div class="notification-card__type-wrap">
                     <span class="notification-card__dot"></span>
                     <strong class="notification-card__type">
-                      <?= htmlspecialchars((string) $n['type'], ENT_QUOTES, 'UTF-8') ?>
+                      <?= htmlspecialchars((string) ($n['display_type'] ?? $n['type'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                     </strong>
                   </div>
 
@@ -95,28 +100,28 @@
                 </div>
 
                 <p class="notification-card__content">
-                  <?= htmlspecialchars((string) ($n['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                  <?= htmlspecialchars((string) ($n['display_content'] ?? $n['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                 </p>
 
                 <div class="notification-card__foot">
                   <p class="notification-card__actor">
                     <?php if (!empty($n['actor_username'])): ?>
-                      <span>Acteur :</span>
+                      <span><?= htmlspecialchars($t->text('notifications_actor'), ENT_QUOTES, 'UTF-8') ?></span>
                       <a href="/user?username=<?= rawurlencode((string) $n['actor_username']) ?>">
                         <?= htmlspecialchars((string) $n['actor_username'], ENT_QUOTES, 'UTF-8') ?>
                       </a>
                     <?php else: ?>
-                      <span>Acteur :</span> système
+                      <span><?= htmlspecialchars($t->text('notifications_actor'), ENT_QUOTES, 'UTF-8') ?></span> <?= htmlspecialchars($t->text('notifications_system'), ENT_QUOTES, 'UTF-8') ?>
                     <?php endif; ?>
                   </p>
 
                   <div class="notification-card__actions">
-                    <a class="notification-card__open" href="<?= htmlspecialchars((string) $n['target_url'], ENT_QUOTES, 'UTF-8') ?>">Ouvrir</a>
+                    <a class="notification-card__open" href="<?= htmlspecialchars((string) ($n['open_url'] ?? $n['target_url'] ?? '/notifications'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t->text('notifications_open'), ENT_QUOTES, 'UTF-8') ?></a>
 
                     <?php if ((int) $n['is_read'] === 0): ?>
                       <form method="post" action="/notifications/read" data-notification-read-form>
                         <input type="hidden" name="notification_id" value="<?= (int) $n['id'] ?>">
-                        <button class="notification-card__read" type="submit">Marquer comme lu</button>
+                        <button class="notification-card__read" type="submit"><?= htmlspecialchars($t->text('notifications_mark_read'), ENT_QUOTES, 'UTF-8') ?></button>
                       </form>
                     <?php endif; ?>
                   </div>

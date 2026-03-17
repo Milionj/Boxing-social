@@ -504,7 +504,7 @@ final class PostController
         $this->notifications->create(
             (int) $post['user_id'],
             $userId,
-            'message',
+            'training_interest',
             null,
             'Un utilisateur a manifesté son intérêt pour votre séance.'
         );

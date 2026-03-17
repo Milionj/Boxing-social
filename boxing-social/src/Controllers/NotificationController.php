@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Notification;
+use App\Services\NotificationService;
 
 /**
  * NotificationController
@@ -26,11 +27,13 @@ final class NotificationController
      * Modèle Notification (accès DB pour la table notifications)
      */
     private Notification $notifications;
+    private NotificationService $notificationService;
 
     public function __construct()
     {
         // Instancie le modèle (qui récupère la connexion PDO)
         $this->notifications = new Notification();
+        $this->notificationService = new NotificationService();
     }
 
     /**
@@ -84,6 +87,36 @@ final class NotificationController
 
         // Affiche le template
         require dirname(__DIR__, 2) . '/templates/notifications/index.php';
+    }
+
+    /**
+     * GET /notifications/open
+     * Marque la notification comme lue puis redirige vers la cible associée.
+     */
+    public function open(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
+
+        $id = (int) $request->input('id', 0);
+        if ($id <= 0) {
+            $response->redirect('/notifications');
+            return;
+        }
+
+        $notification = $this->notifications->findByIdForOwner($id, $userId);
+        if ($notification === null) {
+            $response->redirect('/notifications');
+            return;
+        }
+
+        if ((int) ($notification['is_read'] ?? 0) === 0) {
+            $this->notifications->markReadByOwner($id, $userId);
+        }
+
+        $response->redirect($this->notificationService->resolveTargetUrl($notification));
     }
 
     private function resolveTargetUrl(array $notification): string

@@ -115,14 +115,19 @@ try {
     $router->post('/friends/send', fn() => (new FriendshipController())->send($request, $response));
     $router->post('/friends/accept', fn() => (new FriendshipController())->accept($request, $response));
     $router->post('/friends/decline', fn() => (new FriendshipController())->decline($request, $response));
+    $router->post('/friends/cancel', fn() => (new FriendshipController())->cancel($request, $response));
+    $router->post('/friends/remove', fn() => (new FriendshipController())->remove($request, $response));
 
     // Notifications
     $router->get('/notifications', fn() => (new NotificationController())->index($response));
+    $router->get('/notifications/open', fn() => (new NotificationController())->open($request, $response));
     $router->post('/notifications/read', fn() => (new NotificationController())->markRead($request, $response));
     $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($request, $response));
 
     // Messages privés
     $router->get('/messages', fn() => (new MessageController())->index($request, $response));
+    $router->get('/messages/thread', fn() => (new MessageController())->thread($request, $response));
+    $router->get('/messages/poll', fn() => (new MessageController())->poll($request, $response));
     $router->post('/messages/send', fn() => (new MessageController())->send($request, $response));
 
     // Recherche

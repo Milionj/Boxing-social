@@ -10,8 +10,12 @@ if (!isset($t) || !$t instanceof \App\Services\Translator) {
   data-social-i18n
   data-error-generic="<?= htmlspecialchars($t->text('interaction_generic_error'), ENT_QUOTES, 'UTF-8') ?>"
   data-friend-request-sent="<?= htmlspecialchars($t->text('friends_request_sent'), ENT_QUOTES, 'UTF-8') ?>"
+  data-friend-request-cancelled="<?= htmlspecialchars($t->text('friends_request_cancelled'), ENT_QUOTES, 'UTF-8') ?>"
   data-friends-open-profile="<?= htmlspecialchars($t->text('friends_open_profile'), ENT_QUOTES, 'UTF-8') ?>"
   data-friends-pending-with="<?= htmlspecialchars($t->text('friends_pending_with'), ENT_QUOTES, 'UTF-8') ?>"
+  data-friends-cancel="<?= htmlspecialchars($t->text('friends_cancel'), ENT_QUOTES, 'UTF-8') ?>"
+  data-friends-remove="<?= htmlspecialchars($t->text('friends_remove'), ENT_QUOTES, 'UTF-8') ?>"
+  data-friends-removed="<?= htmlspecialchars($t->text('friends_removed'), ENT_QUOTES, 'UTF-8') ?>"
   data-friends-empty-incoming="<?= htmlspecialchars($t->text('friends_incoming_empty'), ENT_QUOTES, 'UTF-8') ?>"
   data-friends-empty-outgoing="<?= htmlspecialchars($t->text('friends_outgoing_empty'), ENT_QUOTES, 'UTF-8') ?>"
   data-friends-empty-friends="<?= htmlspecialchars($t->text('friends_empty'), ENT_QUOTES, 'UTF-8') ?>"
@@ -22,6 +26,6 @@ if (!isset($t) || !$t instanceof \App\Services\Translator) {
 ></div>
 <?php require __DIR__ . '/cookie-notice.php'; ?>
 <?php require __DIR__ . '/scroll-top.php'; ?>
-<script src="/js/social-interactions.js?v=20260316a" defer></script>
+<script src="/js/social-interactions.js?v=20260317a" defer></script>
   </div>
 </div>

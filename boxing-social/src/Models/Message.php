@@ -48,21 +48,27 @@ final class Message
     /**
      * Retourne la liste des conversations d'un utilisateur.
      *
-     * Idée :
-     * - On cherche tous les messages où l'utilisateur est soit sender, soit receiver
-     * - On identifie "l'autre utilisateur" avec un CASE
-     * - On groupe par interlocuteur
-     * - On trie par date du dernier message
-     *
      * Résultat :
      * - other_user_id
      * - username
      * - last_message_at
+     * - unread_count : messages non lus reçus depuis cette conversation
      */
     public function getConversations(int $userId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT u.id AS other_user_id, u.username, MAX(m.created_at) AS last_message_at
+            'SELECT u.id AS other_user_id,
+                    u.username,
+                    MAX(m.created_at) AS last_message_at,
+                    SUM(
+                        CASE
+                            WHEN m.sender_id = u.id
+                                 AND m.receiver_id = :me4
+                                 AND m.is_read = 0
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS unread_count
              FROM messages m
              INNER JOIN users u
                ON u.id = CASE
@@ -79,6 +85,7 @@ final class Message
             'me1' => $userId,
             'me2' => $userId,
             'me3' => $userId,
+            'me4' => $userId,
         ]);
 
         return $stmt->fetchAll() ?: [];
@@ -100,7 +107,7 @@ final class Message
              FROM messages
              WHERE (sender_id = :me1 AND receiver_id = :other1)
                 OR (sender_id = :other2 AND receiver_id = :me2)
-             ORDER BY created_at ASC'
+             ORDER BY created_at ASC, id ASC'
         );
 
         $stmt->execute([
@@ -108,6 +115,33 @@ final class Message
             'other1' => $otherUserId,
             'other2' => $otherUserId,
             'me2' => $userId,
+        ]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * Retourne uniquement les nouveaux messages d'une conversation à partir d'un ID donné.
+     */
+    public function getConversationMessagesAfter(int $userId, int $otherUserId, int $afterId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, sender_id, receiver_id, content, is_read, created_at
+             FROM messages
+             WHERE (
+                    (sender_id = :me1 AND receiver_id = :other1)
+                    OR (sender_id = :other2 AND receiver_id = :me2)
+                   )
+               AND id > :after_id
+             ORDER BY created_at ASC, id ASC'
+        );
+
+        $stmt->execute([
+            'me1' => $userId,
+            'other1' => $otherUserId,
+            'other2' => $otherUserId,
+            'me2' => $userId,
+            'after_id' => $afterId,
         ]);
 
         return $stmt->fetchAll() ?: [];
@@ -181,5 +215,30 @@ final class Message
             'other_user' => $otherUserId,
             'me' => $userId,
         ]);
+    }
+
+    /**
+     * Retourne l'ID du dernier message que l'utilisateur courant a envoyé
+     * et qui a déjà été lu par l'interlocuteur.
+     *
+     * La lecture étant marquée en bloc, ce maximum permet de propager
+     * simplement l'état "Lu" sur les bulles précédentes côté front.
+     */
+    public function getLastReadOwnMessageId(int $userId, int $otherUserId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COALESCE(MAX(id), 0)
+             FROM messages
+             WHERE sender_id = :me
+               AND receiver_id = :other_user
+               AND is_read = 1'
+        );
+
+        $stmt->execute([
+            'me' => $userId,
+            'other_user' => $otherUserId,
+        ]);
+
+        return (int) $stmt->fetchColumn();
     }
 }

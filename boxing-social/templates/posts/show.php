@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('post_show_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/post-show.css?v=20260315n">
+  <link rel="stylesheet" href="/css/post-show.css?v=20260316f">
 </head>
 <body
   class="app-shell"
@@ -14,6 +14,16 @@
 >
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
   <?php $isTrainingPost = (($post['post_type'] ?? 'publication') === 'entrainement'); ?>
+  <?php $postContent = trim((string) ($post['content'] ?? '')); ?>
+  <?php $contentLength = function_exists('mb_strlen') ? mb_strlen($postContent) : strlen($postContent); ?>
+  <?php $hasMedia = !empty($post['image_path']); ?>
+  <?php $hasTrainingDate = !empty($post['scheduled_at']); ?>
+  <?php $hasTrainingLocation = !empty($post['location']); ?>
+  <?php $trainingDetailsCount = ($hasTrainingDate ? 1 : 0) + ($hasTrainingLocation ? 1 : 0); ?>
+  <?php $hasFactLocation = !$isTrainingPost && $hasTrainingLocation; ?>
+  <?php $hasFactDate = !$isTrainingPost && $hasTrainingDate; ?>
+  <?php $factsCount = ($hasFactLocation ? 1 : 0) + ($hasFactDate ? 1 : 0); ?>
+  <?php $contentSizeClass = $contentLength <= 120 ? 'post-show-card--content-short' : ($contentLength >= 360 ? 'post-show-card--content-long' : 'post-show-card--content-medium'); ?>
   <main class="post-show-page app-main">
     <section class="post-show-hero">
       <h1><?= htmlspecialchars((string) ($post['title'] ?: $t->text('post_untitled')), ENT_QUOTES, 'UTF-8') ?></h1>
@@ -21,7 +31,7 @@
     </section>
 
     <article
-      class="post-show-card <?= $isTrainingPost ? 'post-show-card--training' : 'post-show-card--publication' ?>"
+      class="post-show-card <?= $isTrainingPost ? 'post-show-card--training' : 'post-show-card--publication' ?> <?= $hasMedia ? 'post-show-card--with-media' : 'post-show-card--text-only' ?> <?= $contentSizeClass ?> post-show-card--facts-<?= $factsCount ?>"
       data-post-card
       data-interaction-scope
       data-post-id="<?= (int) $post['id'] ?>"
@@ -34,21 +44,21 @@
         </div>
       </div>
 
-      <?php if ($isTrainingPost): ?>
+      <?php if ($isTrainingPost && $trainingDetailsCount > 0): ?>
         <section class="post-show-card__training-banner">
           <div class="post-show-card__training-head">
             <p class="post-show-card__training-label"><?= htmlspecialchars($t->text('training_session_label'), ENT_QUOTES, 'UTF-8') ?></p>
           </div>
 
           <div class="post-show-card__training-grid">
-            <?php if (!empty($post['scheduled_at'])): ?>
+            <?php if ($hasTrainingDate): ?>
               <article class="post-show-card__training-item">
                 <span><?= htmlspecialchars($t->text('training_when'), ENT_QUOTES, 'UTF-8') ?></span>
                 <strong><?= htmlspecialchars((string) $post['scheduled_at'], ENT_QUOTES, 'UTF-8') ?></strong>
               </article>
             <?php endif; ?>
 
-            <?php if (!empty($post['location'])): ?>
+            <?php if ($hasTrainingLocation): ?>
               <article class="post-show-card__training-item">
                 <span><?= htmlspecialchars($t->text('training_where'), ENT_QUOTES, 'UTF-8') ?></span>
                 <strong><?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></strong>
@@ -58,31 +68,40 @@
         </section>
       <?php endif; ?>
 
-      <div class="post-show-card__layout">
+      <div class="post-show-card__layout<?= $hasMedia ? '' : ' post-show-card__layout--single' ?>">
         <div class="post-show-card__copy">
-          <div class="post-show-card__facts">
-            <?php if (!$isTrainingPost && !empty($post['location'])): ?>
-              <article class="post-show-card__fact-item">
-                <span><?= htmlspecialchars($t->text('post_location'), ENT_QUOTES, 'UTF-8') ?></span>
-                <strong><?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></strong>
-              </article>
-            <?php endif; ?>
-            <?php if (!$isTrainingPost && !empty($post['scheduled_at'])): ?>
-              <article class="post-show-card__fact-item">
-                <span>Séance prévue</span>
-                <strong><?= htmlspecialchars((string) $post['scheduled_at'], ENT_QUOTES, 'UTF-8') ?></strong>
-              </article>
-            <?php endif; ?>
-          </div>
+          <?php if ($factsCount > 0): ?>
+            <div class="post-show-card__facts">
+              <?php if ($hasFactLocation): ?>
+                <article class="post-show-card__fact-item">
+                  <span><?= htmlspecialchars($t->text('post_location'), ENT_QUOTES, 'UTF-8') ?></span>
+                  <strong><?= htmlspecialchars((string) $post['location'], ENT_QUOTES, 'UTF-8') ?></strong>
+                </article>
+              <?php endif; ?>
+              <?php if ($hasFactDate): ?>
+                <article class="post-show-card__fact-item">
+                  <span>Séance prévue</span>
+                  <strong><?= htmlspecialchars((string) $post['scheduled_at'], ENT_QUOTES, 'UTF-8') ?></strong>
+                </article>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
 
-          <div class="post-show-card__content">
-            <?= nl2br(htmlspecialchars((string) $post['content'], ENT_QUOTES, 'UTF-8')) ?>
+          <div class="post-show-card__content<?= $hasMedia ? '' : ' post-show-card__content--no-media' ?>">
+            <?php if (!$hasMedia): ?>
+              <span class="post-show-card__content-brand" aria-hidden="true">
+                <img class="post-show-card__content-brand-logo" src="/img/Bonlogo.png" alt="">
+              </span>
+            <?php endif; ?>
+            <div class="post-show-card__content-text">
+              <?= nl2br(htmlspecialchars($postContent, ENT_QUOTES, 'UTF-8')) ?>
+            </div>
           </div>
         </div>
 
-        <?php $mediaSize = htmlspecialchars((string) ($post['media_size'] ?? 'standard'), ENT_QUOTES, 'UTF-8'); ?>
-        <div class="post-show-card__media post-show-card__media--<?= $mediaSize ?>">
-          <?php if (!empty($post['image_path'])): ?>
+        <?php if ($hasMedia): ?>
+          <?php $mediaSize = htmlspecialchars((string) ($post['media_size'] ?? 'standard'), ENT_QUOTES, 'UTF-8'); ?>
+          <div class="post-show-card__media post-show-card__media--<?= $mediaSize ?>">
             <?php if (($post['media_type'] ?? 'image') === 'video'): ?>
               <video class="hero-image" controls preload="metadata">
                 <source src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>">
@@ -90,10 +109,8 @@
             <?php else: ?>
               <img class="hero-image" src="<?= htmlspecialchars((string) $post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($t->text('post_image_alt'), ENT_QUOTES, 'UTF-8') ?>">
             <?php endif; ?>
-          <?php else: ?>
-            <div class="hero-image hero-image--placeholder">BOXING SOCIAL</div>
-          <?php endif; ?>
-        </div>
+          </div>
+        <?php endif; ?>
       </div>
 
       <div class="post-show-card__actions">
@@ -126,7 +143,9 @@
               <input type="hidden" name="post_id" value="<?= (int) $post['id'] ?>">
               <input type="hidden" name="redirect_to" value="/post?id=<?= (int) $post['id'] ?>">
               <button type="submit" class="interest-button<?= $isInterested ? ' is-active' : '' ?>" data-interest-button <?= $isInterested ? 'disabled' : '' ?>>
-                <span class="interest-button__icon">&#x270A;</span>
+                <span class="interest-button__icon" aria-hidden="true">
+                  <img src="/img/iconspoing.png" alt="">
+                </span>
                 <span class="interest-button__count" data-interest-count><?= (int) $interestCount ?></span>
               </button>
               <span class="interest-form__hint" data-interest-hint>
@@ -216,6 +235,6 @@
     </section>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/post-interactions.js?v=20260316a" defer></script>
+  <script src="/js/post-interactions.js?v=20260316c" defer></script>
 </body>
 </html>

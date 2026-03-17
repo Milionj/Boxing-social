@@ -104,7 +104,7 @@
 }
 
 .home-feed .post--home .post__layout {
-  grid-template-columns: minmax(0, 1.18fr) minmax(230px, 0.82fr);
+  grid-template-columns: 1fr;
 }
 
 .home-feed .post--home .post__content {
@@ -112,9 +112,22 @@
   padding: 16px 18px;
 }
 
+.home-feed .post--home.post--content-short .post__content {
+  padding: 14px 16px;
+}
+
 .home-feed .post--home .post-image,
 .home-feed .post--home .post-image--placeholder {
   min-height: 248px;
+}
+
+.home-feed .post--home.post--content-short .post-image,
+.home-feed .post--home.post--content-short .post-image--placeholder {
+  min-height: 196px;
+}
+
+.home-feed .post--home.post--text-only.post--facts-0.post--content-very-short {
+  padding: 12px 14px 10px;
 }
 
 .home-feed .post--home .post__training-banner {

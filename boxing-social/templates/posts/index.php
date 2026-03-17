@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('posts_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/posts-index.css?v=20260315n">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260317b">
 </head>
 <body
   class="app-shell"
@@ -58,6 +58,6 @@
     </div>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/post-interactions.js?v=20260316a" defer></script>
+  <script src="/js/post-interactions.js?v=20260316c" defer></script>
 </body>
 </html>

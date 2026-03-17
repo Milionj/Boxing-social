@@ -15,6 +15,7 @@
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   };
+  let previewState = null;
 
   document.addEventListener('submit', (event) => {
     const target = event.target;
@@ -43,6 +44,33 @@
     if (target.matches('[data-interest-form]')) {
       event.preventDefault();
       void handleInterestSubmit(target);
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const previewToggle = target.closest('[data-post-preview-toggle]');
+    if (previewToggle instanceof HTMLButtonElement) {
+      event.preventDefault();
+      togglePostPreview(previewToggle);
+      return;
+    }
+
+    if (target.matches('[data-post-preview-close]')) {
+      event.preventDefault();
+      closePostPreview();
+      return;
+    }
+
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closePostPreview();
     }
   });
 
@@ -334,5 +362,136 @@
     }
 
     return defaultErrorMessage;
+  }
+
+  function togglePostPreview(button) {
+    const card = button.closest('[data-post-card]');
+    if (!(card instanceof HTMLElement)) {
+      return;
+    }
+
+    if (previewState?.card === card) {
+      closePostPreview();
+      return;
+    }
+
+    openPostPreview(card, button);
+  }
+
+  function openPostPreview(card, trigger) {
+    closePostPreview({ restoreFocus: false });
+
+    const modal = ensurePreviewModal();
+    const placeholder = document.createComment('post-preview-placeholder');
+    card.after(placeholder);
+
+    modal.body.appendChild(card);
+    modal.container.hidden = false;
+    body.classList.add('has-post-preview');
+    card.classList.add('post--preview-open', 'post--in-preview');
+    trigger.setAttribute('aria-expanded', 'true');
+
+    previewState = {
+      card,
+      trigger,
+      placeholder,
+    };
+  }
+
+  function closePostPreview(options = {}) {
+    if (!previewState) {
+      return;
+    }
+
+    const { restoreFocus = true } = options;
+    const modal = ensurePreviewModal();
+    const { card, trigger, placeholder } = previewState;
+
+    card.classList.remove('post--preview-open', 'post--in-preview');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    if (placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(card, placeholder);
+      placeholder.remove();
+    }
+
+    modal.container.hidden = true;
+    body.classList.remove('has-post-preview');
+
+    if (restoreFocus) {
+      trigger.focus();
+    }
+
+    previewState = null;
+  }
+
+  function ensurePreviewModal() {
+    if (previewState?.modal) {
+      return previewState.modal;
+    }
+
+    let container = document.querySelector('[data-post-preview-root]');
+    if (!(container instanceof HTMLDivElement)) {
+      container = document.createElement('div');
+      container.className = 'post-preview-modal';
+      container.hidden = true;
+      container.setAttribute('data-post-preview-root', '');
+      container.setAttribute('data-post-preview-modal', '');
+
+      const dialog = document.createElement('div');
+      dialog.className = 'post-preview-modal__dialog';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-label', 'Aperçu de la publication');
+
+      const chrome = document.createElement('div');
+      chrome.className = 'post-preview-modal__chrome';
+
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'post-preview-modal__close';
+      closeButton.setAttribute('data-post-preview-close', '');
+      closeButton.setAttribute('aria-label', 'Fermer');
+      closeButton.textContent = '×';
+
+      const content = document.createElement('div');
+      content.className = 'post-preview-modal__content';
+
+      chrome.appendChild(closeButton);
+      dialog.appendChild(chrome);
+      dialog.appendChild(content);
+      container.appendChild(dialog);
+      document.body.appendChild(container);
+
+      container.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+
+        if (target.closest('.post--in-preview') || target.closest('[data-post-preview-close]')) {
+          return;
+        }
+
+        closePostPreview();
+      });
+    }
+
+    const modal = {
+      container,
+      body: container.querySelector('.post-preview-modal__content'),
+    };
+
+    if (!(modal.body instanceof HTMLDivElement)) {
+      throw new Error('Preview modal container is invalid.');
+    }
+
+    if (previewState) {
+      previewState.modal = modal;
+    } else {
+      previewState = { modal };
+    }
+
+    return modal;
   }
 })();

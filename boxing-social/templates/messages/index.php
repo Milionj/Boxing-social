@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('messages_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/messages-index.css?v=20260315j">
+  <link rel="stylesheet" href="/css/messages-index.css?v=20260317a">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
@@ -17,6 +17,10 @@
     data-message-you="<?= htmlspecialchars($t->text('messages_you'), ENT_QUOTES, 'UTF-8') ?>"
     data-message-other="<?= htmlspecialchars($t->text('messages_other'), ENT_QUOTES, 'UTF-8') ?>"
     data-message-empty-thread="<?= htmlspecialchars($t->text('messages_no_messages'), ENT_QUOTES, 'UTF-8') ?>"
+    data-message-read="<?= htmlspecialchars($t->text('messages_read'), ENT_QUOTES, 'UTF-8') ?>"
+    data-message-unread="<?= htmlspecialchars($t->text('messages_unread'), ENT_QUOTES, 'UTF-8') ?>"
+    data-message-thread-endpoint="/messages/thread"
+    data-message-poll-endpoint="/messages/poll"
   >
     <section class="messages-hero">
       <h1><?= htmlspecialchars($t->text('messages_heading'), ENT_QUOTES, 'UTF-8') ?></h1>
@@ -41,11 +45,12 @@
           </div>
         </div>
 
-        <form class="messages-open-form" method="get" action="/messages">
+        <form class="messages-open-form" method="get" action="/messages" data-messages-open-form>
           <label>
             <span><?= htmlspecialchars($t->text('messages_recipient'), ENT_QUOTES, 'UTF-8') ?></span>
             <input type="text" name="username" placeholder="<?= htmlspecialchars($t->text('messages_recipient_placeholder'), ENT_QUOTES, 'UTF-8') ?>" required>
           </label>
+          <p class="interaction-feedback is-error" data-interaction-feedback hidden></p>
           <button type="submit"><?= htmlspecialchars($t->text('messages_open'), ENT_QUOTES, 'UTF-8') ?></button>
         </form>
         <p class="messages-help"><?= htmlspecialchars($t->text('messages_open_help'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -55,12 +60,16 @@
         <div class="conversation-list" data-messages-conversation-list<?= empty($conversations) ? ' hidden' : '' ?>>
           <?php foreach ($conversations as $conv): ?>
             <?php $isActive = ((int) $conv['other_user_id'] === (int) $selectedUserId); ?>
-            <article class="conversation-item<?= $isActive ? ' is-active' : '' ?>" data-conversation-item data-user-id="<?= (int) $conv['other_user_id'] ?>">
-              <a class="conversation-item__main" href="/messages?user_id=<?= (int) $conv['other_user_id'] ?>">
+            <?php $unreadCount = max(0, (int) ($conv['unread_count'] ?? 0)); ?>
+            <article class="conversation-item<?= $isActive ? ' is-active' : '' ?><?= $unreadCount > 0 ? ' is-unread' : '' ?>" data-conversation-item data-user-id="<?= (int) $conv['other_user_id'] ?>">
+              <a class="conversation-item__main" href="/messages?user_id=<?= (int) $conv['other_user_id'] ?>" data-conversation-open>
                 <span class="conversation-item__avatar"><?= htmlspecialchars(strtoupper(substr((string) $conv['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
                 <span class="conversation-item__copy">
                   <strong><?= htmlspecialchars((string) $conv['username'], ENT_QUOTES, 'UTF-8') ?></strong>
-                  <small data-conversation-date><?= htmlspecialchars((string) $conv['last_message_at'], ENT_QUOTES, 'UTF-8') ?></small>
+                  <span class="conversation-item__meta">
+                    <small data-conversation-date><?= htmlspecialchars((string) $conv['last_message_at'], ENT_QUOTES, 'UTF-8') ?></small>
+                    <span class="conversation-item__unread" data-conversation-unread<?= $unreadCount > 0 ? '' : ' hidden' ?>><?= $unreadCount ?></span>
+                  </span>
                 </span>
               </a>
               <a class="conversation-item__profile" href="/user?username=<?= rawurlencode((string) $conv['username']) ?>">
@@ -112,12 +121,17 @@
             <div class="message-list" data-message-list<?= empty($thread) ? ' hidden' : '' ?>>
               <?php foreach ($thread as $m): ?>
                 <?php $isMine = ((int) $m['sender_id'] === (int) ($_SESSION['user']['id'] ?? 0)); ?>
-                <article class="message-bubble<?= $isMine ? ' is-mine' : '' ?>" data-message-item data-message-id="<?= (int) $m['id'] ?>">
+                <article class="message-bubble<?= $isMine ? ' is-mine' : '' ?>" data-message-item data-message-id="<?= (int) $m['id'] ?>" data-message-is-mine="<?= $isMine ? '1' : '0' ?>">
                   <div class="message-bubble__head">
                     <strong><?= htmlspecialchars($isMine ? $t->text('messages_you') : $t->text('messages_other'), ENT_QUOTES, 'UTF-8') ?></strong>
                     <small><?= htmlspecialchars((string) $m['created_at'], ENT_QUOTES, 'UTF-8') ?></small>
                   </div>
                   <p><?= nl2br(htmlspecialchars((string) $m['content'], ENT_QUOTES, 'UTF-8')) ?></p>
+                  <?php if ($isMine): ?>
+                    <small class="message-bubble__state<?= ((int) $m['is_read'] === 1) ? ' is-read' : ' is-unread' ?>" data-message-read-state>
+                      <?= htmlspecialchars(((int) $m['is_read'] === 1) ? $t->text('messages_read') : $t->text('messages_unread'), ENT_QUOTES, 'UTF-8') ?>
+                    </small>
+                  <?php endif; ?>
                 </article>
               <?php endforeach; ?>
             </div>
@@ -137,6 +151,6 @@
     </div>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/messages-interactions.js?v=20260316a" defer></script>
+  <script src="/js/messages-interactions.js?v=20260317a" defer></script>
 </body>
 </html>
