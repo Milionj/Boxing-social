@@ -40,6 +40,7 @@ use App\Controllers\SearchController;
 use App\Controllers\ContactController;
 use App\Controllers\CookiePreferencesController;
 use App\Controllers\SettingsController;
+use App\Controllers\SportsController;
 use App\Models\Comment;
 use App\Models\Friendship;
 use App\Models\Notification;
@@ -134,8 +135,12 @@ try {
     $router->get('/search', fn() => (new SearchController())->index($request, $response));
     $router->get('/search/usernames', fn() => (new SearchController())->usernames($request, $response));
 
+    // Sports data
+    $router->get('/sports/mma/schedule', fn() => (new SportsController())->mmaSchedule($request, $response));
+    $router->get('/sports/mma/event', fn() => (new SportsController())->mmaEvent($request, $response));
+
     // Admin
-    $router->get('/admin', fn() => (new AdminController())->index($response));
+    $router->get('/admin', fn() => (new AdminController())->index($request, $response));
     $router->post('/admin/users/toggle', fn() => (new AdminController())->toggleUser($request, $response));
     $router->post('/admin/posts/delete', fn() => (new AdminController())->deletePost($request, $response));
     $router->post('/admin/comments/delete', fn() => (new AdminController())->deleteComment($request, $response));

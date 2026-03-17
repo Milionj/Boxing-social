@@ -338,11 +338,88 @@ public function latestForAdmin(int $limit = 100): array
     return $stmt->fetchAll() ?: [];
 }
 
+public function searchForAdmin(array $filters = [], int $limit = 25, int $offset = 0): array
+{
+    $params = [];
+    $where = $this->adminPostsWhere($filters, $params);
+
+    $stmt = $this->pdo->prepare(
+        'SELECT p.id, p.user_id, p.title, p.content, p.visibility, p.created_at, u.username,
+                p.post_type, p.scheduled_at, p.location, p.media_type, p.image_path
+         FROM posts p
+         INNER JOIN users u ON u.id = p.user_id
+         ' . $where . '
+         ORDER BY p.created_at DESC, p.id DESC
+         LIMIT :lim OFFSET :off'
+    );
+
+    foreach ($params as $key => $value) {
+        $stmt->bindValue(':' . $key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
+public function countForAdmin(array $filters = []): int
+{
+    $params = [];
+    $where = $this->adminPostsWhere($filters, $params);
+
+    $stmt = $this->pdo->prepare(
+        'SELECT COUNT(*)
+         FROM posts p
+         INNER JOIN users u ON u.id = p.user_id
+         ' . $where
+    );
+    $stmt->execute($params);
+
+    return (int) $stmt->fetchColumn();
+}
+
 public function deleteByAdmin(int $postId): bool
 {
     $stmt = $this->pdo->prepare('DELETE FROM posts WHERE id = :id');
 
     return $stmt->execute(['id' => $postId]);
+}
+
+private function adminPostsWhere(array $filters, array &$params): string
+{
+    $clauses = ['WHERE 1=1'];
+    $query = trim((string) ($filters['query'] ?? ''));
+    $visibility = (string) ($filters['visibility'] ?? '');
+    $postType = (string) ($filters['post_type'] ?? '');
+
+    if ($query !== '') {
+        $params['query_title_like'] = '%' . $query . '%';
+        $params['query_content_like'] = '%' . $query . '%';
+        $params['query_username_like'] = '%' . $query . '%';
+        $params['query_location_like'] = '%' . $query . '%';
+        $params['query_id_like'] = '%' . $query . '%';
+        $clauses[] = 'AND (
+            p.title LIKE :query_title_like
+            OR p.content LIKE :query_content_like
+            OR u.username LIKE :query_username_like
+            OR COALESCE(p.location, \'\') LIKE :query_location_like
+            OR CAST(p.id AS CHAR) LIKE :query_id_like
+        )';
+    }
+
+    if (in_array($visibility, ['public', 'friends', 'private'], true)) {
+        $params['visibility'] = $visibility;
+        $clauses[] = 'AND p.visibility = :visibility';
+    }
+
+    if (in_array($postType, ['publication', 'entrainement'], true)) {
+        $params['post_type'] = $postType;
+        $clauses[] = 'AND p.post_type = :post_type';
+    }
+
+    return implode("\n", $clauses);
 }
 
 public function latestPublicByUserId(int $userId, int $limit = 12, int $offset = 0): array
