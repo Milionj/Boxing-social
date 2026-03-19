@@ -84,6 +84,11 @@ final class FriendshipController
         ], $status);
     }
 
+    private function redirectIndex(Response $response): void
+    {
+        $response->redirect('/friends');
+    }
+
     /**
      * GET /friends
      * Affiche la page "amis" avec :
@@ -185,7 +190,7 @@ final class FriendshipController
                 'message' => 'Demande envoyée.',
                 'counts' => $this->friendshipCounts($userId),
                 'outgoing' => $pending === null ? null : [
-                    'id' => (int) $pending['id'],
+                    'friendshipId' => (int) $pending['id'],
                     'username' => (string) $pending['addressee_username'],
                     'profileUrl' => '/user?username=' . rawurlencode((string) $pending['addressee_username']),
                 ],
@@ -231,6 +236,7 @@ final class FriendshipController
             if ((int) $req['id'] === $id) {
                 $actorId = (int) $req['requester_id'];
                 $acceptedFriend = [
+                    'friendshipId' => $id,
                     'id' => $actorId,
                     'username' => (string) $req['requester_username'],
                     'profileUrl' => '/user?username=' . rawurlencode((string) $req['requester_username']),
@@ -340,5 +346,141 @@ final class FriendshipController
 
         $_SESSION['success_friends'] = 'Demande refusée.';
         $response->redirect('/friends');
+    }
+
+    /**
+     * POST /friends/cancel
+     * Permet à l'émetteur d'annuler sa demande en attente.
+     */
+    public function cancel(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
+
+        $id = (int) $request->input('friendship_id', 0);
+        if ($id <= 0) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Demande introuvable.');
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Demande introuvable.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        $outgoing = $this->friendships->outgoingRequests($userId);
+        $pending = null;
+        foreach ($outgoing as $item) {
+            if ((int) $item['id'] === $id) {
+                $pending = $item;
+                break;
+            }
+        }
+
+        if ($pending === null) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Demande introuvable.', 404);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Demande introuvable.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        if (!$this->friendships->cancelPendingByRequester($id, $userId)) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Impossible d’annuler cette demande.', 500);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Impossible d’annuler cette demande.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'message' => 'Demande annulée.',
+                'friendshipId' => $id,
+                'counts' => $this->friendshipCounts($userId),
+            ]);
+            return;
+        }
+
+        $_SESSION['success_friends'] = 'Demande annulée.';
+        $this->redirectIndex($response);
+    }
+
+    /**
+     * POST /friends/remove
+     * Retire un ami déjà accepté.
+     */
+    public function remove(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
+
+        $id = (int) $request->input('friendship_id', 0);
+        if ($id <= 0) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Ami introuvable.');
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Ami introuvable.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        $friends = $this->friendships->friendsOf($userId);
+        $friend = null;
+        foreach ($friends as $item) {
+            if ((int) ($item['friendship_id'] ?? 0) === $id) {
+                $friend = $item;
+                break;
+            }
+        }
+
+        if ($friend === null) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Ami introuvable.', 404);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Ami introuvable.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        if (!$this->friendships->removeAcceptedByUser($id, $userId)) {
+            if ($request->expectsJson()) {
+                $this->jsonError($response, 'Impossible de retirer cet ami.', 500);
+                return;
+            }
+
+            $_SESSION['errors_friends'] = ['Impossible de retirer cet ami.'];
+            $this->redirectIndex($response);
+            return;
+        }
+
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => true,
+                'message' => 'Ami retiré.',
+                'friendshipId' => $id,
+                'counts' => $this->friendshipCounts($userId),
+            ]);
+            return;
+        }
+
+        $_SESSION['success_friends'] = 'Ami retiré.';
+        $this->redirectIndex($response);
     }
 }

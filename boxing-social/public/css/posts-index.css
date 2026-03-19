@@ -66,6 +66,8 @@
 }
 
 .feed-side-card {
+  display: grid;
+  gap: 14px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
@@ -73,6 +75,11 @@
     linear-gradient(180deg, rgba(35, 40, 46, 0.96), rgba(28, 32, 37, 0.94)),
     radial-gradient(circle at top right, rgba(187, 73, 61, 0.14), transparent 32%);
   box-shadow: 0 18px 40px rgba(7, 9, 12, 0.18);
+}
+
+.feed-side-card--sports {
+  max-height: calc(100vh - 116px);
+  overflow: hidden;
 }
 
 .feed-side-card__head {
@@ -164,6 +171,124 @@
   line-height: 1.6;
 }
 
+.feed-side-sports {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.feed-side-sports__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.feed-side-sports__season {
+  display: grid;
+  gap: 6px;
+}
+
+.feed-side-sports__season span {
+  color: #8f8679;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.feed-side-sports__season select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4efe7;
+  font: inherit;
+}
+
+.feed-side-sports__refresh {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #9d2c20;
+  color: #fff8f0;
+  font: inherit;
+  font-weight: 800;
+}
+
+.feed-side-sports__refresh:hover {
+  background: #852318;
+}
+
+.feed-side-sports__status {
+  margin: 0;
+  color: #d0c6b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.feed-side-sports__status[data-tone="loading"] {
+  color: #f0dcc8;
+}
+
+.feed-side-sports__status[data-tone="info"] {
+  color: #cbb89e;
+}
+
+.feed-side-sports__list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  max-height: calc(100vh - 312px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+}
+
+.feed-side-sports__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.feed-side-sports__list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.feed-side-sports__list::-webkit-scrollbar-thumb {
+  background: rgba(187, 73, 61, 0.62);
+  border-radius: 999px;
+}
+
+.feed-side-sports__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(187, 73, 61, 0.78);
+}
+
+.feed-side-sports__item {
+  display: grid;
+  gap: 4px;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.feed-side-sports__item-title {
+  color: #fff7eb;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.feed-side-sports__item-meta,
+.feed-side-sports__item-detail {
+  margin: 0;
+  color: #d0c6b8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .posts-feed__head {
   display: flex;
   align-items: center;
@@ -233,10 +358,16 @@
   color: #f6f0e6;
 }
 
+.post__type-row {
+  display: flex;
+  align-items: flex-start;
+  margin: 0 0 12px;
+}
+
 .post__head {
   display: grid;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .post__topline {
@@ -383,20 +514,37 @@
 
 .post__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.22fr) minmax(235px, 0.78fr);
-  gap: 16px;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.post__layout--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .post__body {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.post--facts-0 .post__body {
+  gap: 12px;
+}
+
+.post--facts-1 .post__body {
+  gap: 8px;
 }
 
 .post__facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
+}
+
+.post--facts-1 .post__facts {
+  grid-template-columns: minmax(0, 240px);
 }
 
 .post__fact-card {
@@ -423,50 +571,239 @@
 
 .post__content {
   position: relative;
-  min-height: 0;
   padding: 16px 18px;
   border-radius: 18px;
   background: #2f3439;
   color: #f3ede2;
   font-size: 14px;
   line-height: 1.62;
+  align-self: stretch;
 }
 
-.post__content::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(187, 73, 61, 0.55), transparent 42%);
+.post__content-text {
+  min-width: 0;
+}
+
+.post__content--no-media {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.post__content-brand {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(37, 41, 45, 0.94), rgba(27, 31, 35, 0.96)),
+    radial-gradient(circle at top right, rgba(187, 73, 61, 0.14), transparent 46%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.post__content-brand-logo {
+  width: 20px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.post__body-tail {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.post--facts-0 .post__body-tail {
+  padding-top: 10px;
+}
+
+.post--text-only .post__title,
+.post--content-long .post__title {
+  max-width: none;
+}
+
+.post--text-only .post__body {
+  max-width: 100%;
+}
+
+.post--content-short .post__content {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.post--facts-0 .post__content {
+  padding: 14px 16px;
+}
+
+.post--facts-0.post--content-short .post__content {
+  padding: 12px 14px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short {
+  padding: 14px 16px 12px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__head {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__title {
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.08;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__author {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__visibility-chip {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 10px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__content {
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__content--no-media {
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__content-brand {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__content-brand-logo {
+  width: 16px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__actions {
+  margin: 10px 0 2px;
+  gap: 10px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__likes {
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__likes span {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post-comments summary {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__footer-row {
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.post--text-only.post--facts-0.post--content-very-short .post__body-tail {
+  gap: 8px;
+  padding-top: 8px;
 }
 
 .post__media {
   min-width: 0;
   display: flex;
+  width: 100%;
   align-items: stretch;
+  align-self: stretch;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.post__media--type-image {
+  justify-content: center;
+  padding: 10px;
+  border: 1px solid rgba(17, 20, 25, 0.08);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 48%),
+    linear-gradient(180deg, #07090c, #040507);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.post__media--type-image .post-image {
+  width: min(100%, 760px);
+  height: auto;
+  min-height: 0;
+  max-height: clamp(240px, 46vw, 420px);
+  margin: 0 auto;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  aspect-ratio: auto;
+  object-fit: contain;
 }
 
 .post__media--compact .post-image,
 .post__media--compact .post-image--placeholder {
-  min-height: 170px;
+  min-height: 188px;
+}
+
+.post--content-short .post__media--compact .post-image,
+.post--content-short .post__media--compact .post-image--placeholder {
+  min-height: 160px;
+}
+
+.post__media--type-image.post__media--compact .post-image {
+  max-height: clamp(220px, 38vw, 320px);
 }
 
 .post__media--standard .post-image,
 .post__media--standard .post-image--placeholder {
-  min-height: 238px;
+  min-height: 280px;
+}
+
+.post--content-short .post__media--standard .post-image,
+.post--content-short .post__media--standard .post-image--placeholder {
+  min-height: 224px;
+}
+
+.post__media--type-image.post__media--standard .post-image {
+  max-height: clamp(240px, 46vw, 420px);
 }
 
 .post__media--large .post-image,
 .post__media--large .post-image--placeholder {
-  min-height: 320px;
+  min-height: 360px;
+}
+
+.post--content-short .post__media--large .post-image,
+.post--content-short .post__media--large .post-image--placeholder {
+  min-height: 288px;
+}
+
+.post__media--type-image.post__media--large .post-image {
+  max-height: clamp(280px, 52vw, 520px);
 }
 
 .post-image,
 .post-image--placeholder {
   width: 100%;
-  height: 100%;
-  min-height: 238px;
+  height: auto;
+  min-height: 280px;
   display: block;
   border-radius: 18px;
   border: 1px solid rgba(17, 20, 25, 0.08);
@@ -476,6 +813,7 @@
 
 .post-image {
   object-fit: cover;
+  aspect-ratio: 16 / 10;
 }
 
 .post-image--placeholder {
@@ -629,7 +967,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
-  align-items: start;
+  align-items: end;
   margin-top: 10px;
 }
 
@@ -767,8 +1105,20 @@ button {
 }
 
 .interest-button__icon {
-  font-size: 20px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.interest-button__icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(157, 44, 32, 0.28));
 }
 
 .interest-button__count {
@@ -781,6 +1131,10 @@ button {
 .interest-button.is-active {
   background: #31363c;
   border-color: #31363c;
+}
+
+.interest-button.is-active .interest-button__icon img {
+  transform: scale(1.04);
 }
 
 .interest-button:disabled {
@@ -797,7 +1151,8 @@ button {
 }
 
 .post__owner-actions a,
-.post__view-link a {
+.post__view-link a,
+.post__preview-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -814,14 +1169,352 @@ button {
   margin: 0;
 }
 
-.post__view-link a {
+.post__preview-toggle {
+  border: 0;
+  cursor: pointer;
+}
+
+.post__view-link a,
+.post__preview-toggle {
   background: #23272c;
   color: #fff8ed;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
-.post__view-link a:hover {
+.post__view-link a:hover,
+.post__preview-toggle:hover {
   background: #1a1e22;
+}
+
+.has-post-preview {
+  overflow: hidden;
+}
+
+.post-preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: start center;
+  padding: 24px 20px 20px;
+  background: rgba(4, 5, 7, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.post-preview-modal[hidden] {
+  display: none;
+}
+
+.post-preview-modal__dialog {
+  width: min(1220px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;
+  border-radius: 28px;
+}
+
+.post-preview-modal__chrome {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 14px 0;
+  pointer-events: none;
+}
+
+.post-preview-modal__close {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(18, 22, 27, 0.88);
+  color: #fff8ed;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+.post-preview-modal__close:hover {
+  background: rgba(10, 13, 17, 0.94);
+}
+
+.post-preview-modal__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 340px);
+  gap: 18px;
+  padding: 0 4px 8px;
+  align-items: start;
+}
+
+.post-preview-modal__content {
+  min-width: 0;
+  margin-top: -12px;
+}
+
+.post-preview-modal__sidebar {
+  min-width: 0;
+  margin-top: 4px;
+}
+
+.post-preview-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(22, 26, 31, 0.96), rgba(16, 20, 25, 0.94)),
+    radial-gradient(circle at top right, rgba(187, 73, 61, 0.12), transparent 34%);
+  color: #f3efe8;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.post-preview-panel__head {
+  display: grid;
+  gap: 8px;
+}
+
+.post-preview-panel__eyebrow {
+  margin: 0;
+  color: #d8c8b3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.post-preview-panel__intro {
+  margin: 0;
+  color: #cdbfae;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.post-preview-panel__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.post-preview-panel__season {
+  display: grid;
+  gap: 6px;
+}
+
+.post-preview-panel__season span {
+  color: #b8ac9e;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.post-preview-panel__season select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f0e7;
+  font: inherit;
+}
+
+.post-preview-panel__refresh {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #9d2c20;
+  color: #fff8f0;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.post-preview-panel__refresh:hover {
+  background: #852318;
+}
+
+.post-preview-panel__status {
+  margin: 0;
+  color: #d6cab8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.post-preview-panel__status[data-tone="loading"] {
+  color: #f0dcc8;
+}
+
+.post-preview-panel__status[data-tone="info"] {
+  color: #cbb89e;
+}
+
+.post-preview-panel__list,
+.post-preview-panel__detail {
+  min-width: 0;
+}
+
+.post-preview-panel__events {
+  display: grid;
+  gap: 8px;
+}
+
+.post-preview-panel__event {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8f3ea;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.post-preview-panel__event:hover {
+  transform: translateY(-1px);
+  border-color: rgba(187, 73, 61, 0.36);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.post-preview-panel__event.is-active {
+  border-color: rgba(187, 73, 61, 0.48);
+  background: rgba(187, 73, 61, 0.14);
+}
+
+.post-preview-panel__event strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.post-preview-panel__event span {
+  color: #c9bca9;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.post-preview-panel__event-detail {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.post-preview-panel__event-detail h3 {
+  margin: 0;
+  color: #fff8ed;
+  font-size: 18px;
+  line-height: 1.14;
+}
+
+.post-preview-panel__event-date {
+  margin: 0;
+  color: #d7c7b1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.post-preview-panel__event-row {
+  display: grid;
+  gap: 4px;
+}
+
+.post-preview-panel__event-row strong {
+  color: #bcae9d;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.post-preview-panel__event-row span {
+  color: #f1eadf;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.post-preview-panel__event-fights {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.post-preview-panel__event-fights-title {
+  color: #bcae9d;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.post-preview-panel__event-fights-list {
+  display: grid;
+  gap: 8px;
+}
+
+.post-preview-panel__event-fight {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.post-preview-panel__event-fight-label {
+  color: #fff5ea;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.post-preview-panel__event-fight-meta {
+  color: #c8baa9;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.post--in-preview {
+  box-sizing: border-box;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 28px;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.post--preview-open .post__media {
+  padding: 10px;
+  border-radius: 22px;
+}
+
+.post--preview-open .post__media .post-image,
+.post--preview-open .post__media .post-image--placeholder {
+  min-height: clamp(220px, 34vw, 420px);
+  max-height: min(58vh, 520px);
+}
+
+.post--preview-open .post__media--type-image .post-image {
+  max-height: min(52vh, 460px);
+}
+
+.post--preview-open .post__content {
+  font-size: 14px;
+  line-height: 1.65;
 }
 
 @media (max-width: 900px) {
@@ -836,6 +1529,17 @@ button {
 
   .feed-side-rail {
     position: static;
+  }
+
+  .feed-side-card--sports {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .feed-side-sports__list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .post__layout,
@@ -854,6 +1558,43 @@ button {
   .post-image,
   .post-image--placeholder {
     min-height: 220px;
+  }
+
+  .post__media--type-image .post-image {
+    width: 100%;
+    max-height: 360px;
+  }
+
+  .post-preview-modal {
+    padding: 14px 10px 10px;
+  }
+
+  .post-preview-modal__dialog {
+    width: min(100%, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+  }
+
+  .post-preview-modal__layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .post-preview-modal__content {
+    margin-top: -12px;
+  }
+
+  .post-preview-panel {
+    position: static;
+  }
+
+  .post--preview-open .post__media .post-image,
+  .post--preview-open .post__media .post-image--placeholder {
+    min-height: clamp(190px, 50vw, 320px);
+    max-height: min(44vh, 320px);
+  }
+
+  .post--preview-open .post__media--type-image .post-image {
+    max-height: min(40vh, 280px);
   }
 
   .post__training-grid,

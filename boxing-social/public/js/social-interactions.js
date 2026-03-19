@@ -7,8 +7,12 @@
   const texts = {
     errorGeneric: i18n.dataset.errorGeneric || 'Impossible de mettre à jour l’interaction pour le moment.',
     friendRequestSent: i18n.dataset.friendRequestSent || 'Demande envoyée.',
+    friendRequestCancelled: i18n.dataset.friendRequestCancelled || 'Demande annulée.',
     friendsOpenProfile: i18n.dataset.friendsOpenProfile || 'Voir le profil',
     friendsPendingWith: i18n.dataset.friendsPendingWith || 'Invitation en attente pour',
+    friendsCancel: i18n.dataset.friendsCancel || 'Annuler',
+    friendsRemove: i18n.dataset.friendsRemove || 'Retirer',
+    friendsRemoved: i18n.dataset.friendsRemoved || 'Ami retiré.',
     friendsEmptyIncoming: i18n.dataset.friendsEmptyIncoming || 'Aucune demande reçue.',
     friendsEmptyOutgoing: i18n.dataset.friendsEmptyOutgoing || 'Aucune demande envoyée.',
     friendsEmptyFriends: i18n.dataset.friendsEmptyFriends || 'Tu n’as pas encore d’amis.',
@@ -54,7 +58,42 @@
     if (target.matches('[data-friend-decline-form]')) {
       event.preventDefault();
       void handleFriendReply(target, 'decline');
+      return;
     }
+
+    if (target.matches('[data-friend-cancel-form]')) {
+      event.preventDefault();
+      void handleFriendCancel(target);
+      return;
+    }
+
+    if (target.matches('[data-friend-remove-form]')) {
+      event.preventDefault();
+      void handleFriendRemove(target);
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const notificationItem = target.closest('[data-notification-item]');
+    if (!(notificationItem instanceof HTMLElement)) {
+      return;
+    }
+
+    if (target.closest('a, button, form, input, textarea, select, label')) {
+      return;
+    }
+
+    const openUrl = notificationItem.dataset.notificationOpenUrl || '';
+    if (openUrl === '') {
+      return;
+    }
+
+    window.location.assign(openUrl);
   });
 
   async function handleNotificationRead(form) {
@@ -153,6 +192,48 @@
         prependFriendTile(payload.friend);
       }
 
+      syncFriendsEmptyStates();
+    } catch (error) {
+      showFeedback(scope, resolveErrorMessage(error));
+      setFormPending(form, false);
+    }
+  }
+
+  async function handleFriendCancel(form) {
+    const scope = findScope(form, 'social');
+    const formData = new FormData(form);
+    clearFeedback(scope);
+    setFormPending(form, true);
+
+    try {
+      const payload = await requestJson(form, formData);
+      const row = form.closest('[data-friendship-row]');
+      if (row instanceof HTMLElement) {
+        row.remove();
+      }
+
+      updateFriendCounts(payload.counts);
+      syncFriendsEmptyStates();
+    } catch (error) {
+      showFeedback(scope, resolveErrorMessage(error));
+      setFormPending(form, false);
+    }
+  }
+
+  async function handleFriendRemove(form) {
+    const scope = findScope(form, 'social');
+    const formData = new FormData(form);
+    clearFeedback(scope);
+    setFormPending(form, true);
+
+    try {
+      const payload = await requestJson(form, formData);
+      const tile = form.closest('[data-friendship-row]');
+      if (tile instanceof HTMLElement) {
+        tile.remove();
+      }
+
+      updateFriendCounts(payload.counts);
       syncFriendsEmptyStates();
     } catch (error) {
       showFeedback(scope, resolveErrorMessage(error));
@@ -267,6 +348,9 @@
   function createOutgoingRow(outgoing) {
     const article = document.createElement('article');
     article.className = 'friend-row friend-row--simple';
+    article.dataset.socialScope = '';
+    article.dataset.friendshipRow = '';
+    article.dataset.friendshipId = String(outgoing.friendshipId);
 
     const identity = document.createElement('div');
     identity.className = 'friend-row__identity';
@@ -291,13 +375,43 @@
     identity.appendChild(avatar);
     identity.appendChild(copy);
 
+    const actions = document.createElement('div');
+    actions.className = 'friend-row__actions';
+
     const profileLink = document.createElement('a');
     profileLink.className = 'friend-row__profile-link';
     profileLink.href = outgoing.profileUrl;
     profileLink.textContent = texts.friendsOpenProfile;
 
+    const cancelForm = document.createElement('form');
+    cancelForm.method = 'post';
+    cancelForm.action = '/friends/cancel';
+    cancelForm.dataset.friendCancelForm = '';
+
+    const cancelInput = document.createElement('input');
+    cancelInput.type = 'hidden';
+    cancelInput.name = 'friendship_id';
+    cancelInput.value = String(outgoing.friendshipId);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'button-secondary';
+    cancelButton.type = 'submit';
+    cancelButton.textContent = texts.friendsCancel;
+
+    cancelForm.appendChild(cancelInput);
+    cancelForm.appendChild(cancelButton);
+
+    actions.appendChild(profileLink);
+    actions.appendChild(cancelForm);
+
+    const feedback = document.createElement('p');
+    feedback.className = 'interaction-feedback';
+    feedback.dataset.interactionFeedback = '';
+    feedback.hidden = true;
+
     article.appendChild(identity);
-    article.appendChild(profileLink);
+    article.appendChild(actions);
+    article.appendChild(feedback);
 
     return article;
   }
@@ -305,6 +419,9 @@
   function createFriendTile(friend) {
     const article = document.createElement('article');
     article.className = 'friend-tile';
+    article.dataset.socialScope = '';
+    article.dataset.friendshipRow = '';
+    article.dataset.friendshipId = String(friend.friendshipId);
 
     const avatar = document.createElement('div');
     avatar.className = 'friend-tile__avatar';
@@ -321,9 +438,39 @@
     link.href = friend.profileUrl;
     link.textContent = texts.friendsOpenProfile;
 
+    const actions = document.createElement('div');
+    actions.className = 'friend-tile__actions';
+
+    const removeForm = document.createElement('form');
+    removeForm.method = 'post';
+    removeForm.action = '/friends/remove';
+    removeForm.dataset.friendRemoveForm = '';
+
+    const removeInput = document.createElement('input');
+    removeInput.type = 'hidden';
+    removeInput.name = 'friendship_id';
+    removeInput.value = String(friend.friendshipId);
+
+    const removeButton = document.createElement('button');
+    removeButton.className = 'button-secondary';
+    removeButton.type = 'submit';
+    removeButton.textContent = texts.friendsRemove;
+
+    removeForm.appendChild(removeInput);
+    removeForm.appendChild(removeButton);
+
+    actions.appendChild(link);
+    actions.appendChild(removeForm);
+
+    const feedback = document.createElement('p');
+    feedback.className = 'interaction-feedback';
+    feedback.dataset.interactionFeedback = '';
+    feedback.hidden = true;
+
     article.appendChild(avatar);
     article.appendChild(title);
-    article.appendChild(link);
+    article.appendChild(actions);
+    article.appendChild(feedback);
 
     return article;
   }

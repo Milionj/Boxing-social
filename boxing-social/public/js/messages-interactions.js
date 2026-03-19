@@ -4,7 +4,19 @@
     return;
   }
 
+  const threadPanel = page.querySelector('[data-messages-thread]');
+  const conversationList = page.querySelector('[data-messages-conversation-list]');
+  const conversationsEmpty = page.querySelector('[data-messages-conversations-empty]');
+  const idleState = threadPanel?.querySelector('[data-messages-idle-state]');
+  const activeState = threadPanel?.querySelector('[data-messages-active-state]');
+  const threadTarget = threadPanel?.querySelector('[data-messages-thread-target]');
+  const emptyThread = threadPanel?.querySelector('[data-messages-empty-thread]');
+  const messageList = threadPanel?.querySelector('[data-message-list]');
+  const replyForm = threadPanel?.querySelector('[data-message-send-form][data-message-mode="reply"]');
+  const replyReceiver = replyForm?.querySelector('input[name="receiver_id"]');
+  const openForm = page.querySelector('[data-messages-open-form]');
   const socialI18n = document.querySelector('[data-social-i18n]');
+
   const texts = {
     errorGeneric: socialI18n?.dataset.errorGeneric || 'Impossible d’envoyer le message pour le moment.',
     sent: page.dataset.messageSent || 'Message envoyé.',
@@ -12,6 +24,13 @@
     you: page.dataset.messageYou || 'Moi',
     other: page.dataset.messageOther || 'La personne',
     emptyThread: page.dataset.messageEmptyThread || 'Aucun message dans cette conversation.',
+    read: page.dataset.messageRead || 'Lu',
+    unread: page.dataset.messageUnread || 'Non lu',
+  };
+
+  const endpoints = {
+    thread: page.dataset.messageThreadEndpoint || '/messages/thread',
+    poll: page.dataset.messagePollEndpoint || '/messages/poll',
   };
 
   const requestHeaders = {
@@ -19,15 +38,79 @@
     'X-Requested-With': 'XMLHttpRequest',
   };
 
+  const state = {
+    pollTimer: 0,
+    pollInFlight: false,
+  };
+
   document.addEventListener('submit', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLFormElement) || !target.matches('[data-message-send-form]')) {
+    if (!(target instanceof HTMLFormElement)) {
+      return;
+    }
+
+    if (target.matches('[data-message-send-form]')) {
+      event.preventDefault();
+      void handleMessageSend(target);
+      return;
+    }
+
+    if (target.matches('[data-messages-open-form]')) {
+      event.preventDefault();
+      void handleConversationLookup(target);
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const trigger = target.closest('[data-conversation-open]');
+    if (!(trigger instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (
+      event.defaultPrevented
+      || event.button !== 0
+      || event.metaKey
+      || event.ctrlKey
+      || event.shiftKey
+      || event.altKey
+      || trigger.target === '_blank'
+    ) {
+      return;
+    }
+
+    const item = trigger.closest('[data-conversation-item]');
+    const userId = Number(item?.getAttribute('data-user-id') || 0);
+    if (userId <= 0) {
       return;
     }
 
     event.preventDefault();
-    void handleMessageSend(target);
+    void openConversation({ userId });
   });
+
+  window.addEventListener('popstate', () => {
+    const params = new URLSearchParams(window.location.search);
+    const userId = Number(params.get('user_id') || 0);
+    const username = (params.get('username') || '').trim();
+
+    if (userId > 0 || username !== '') {
+      void openConversation({ userId, username, pushHistory: false, restoreOnFailure: false });
+      return;
+    }
+
+    deactivateConversation();
+  });
+
+  if (getSelectedUserId() > 0) {
+    startPolling();
+    applyReadState(getLatestReadMessageIdFromDom());
+  }
 
   async function handleMessageSend(form) {
     const formData = new FormData(form);
@@ -35,7 +118,11 @@
     setFormPending(form, true);
 
     try {
-      const payload = await requestJson(form, formData);
+      const payload = await requestJson(form.action, {
+        method: (form.method || 'POST').toUpperCase(),
+        body: formData,
+      });
+
       if (!payload?.conversation || !payload?.messageItem) {
         throw new Error(texts.errorGeneric);
       }
@@ -48,6 +135,8 @@
       } else {
         appendMessage(payload.messageItem);
       }
+
+      applyReadState(Number(payload.lastReadMessageId || 0));
 
       const textarea = form.querySelector('textarea[name="content"]');
       if (textarea instanceof HTMLTextAreaElement) {
@@ -67,11 +156,110 @@
     }
   }
 
-  async function requestJson(form, body) {
-    const response = await fetch(form.action, {
-      method: (form.method || 'POST').toUpperCase(),
-      body: body || new FormData(form),
-      headers: requestHeaders,
+  async function handleConversationLookup(form) {
+    const usernameInput = form.querySelector('input[name="username"]');
+    if (!(usernameInput instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const username = usernameInput.value.trim();
+    if (username === '') {
+      showFeedback(form, texts.errorGeneric);
+      return;
+    }
+
+    clearFeedback(form);
+    setFormPending(form, true);
+
+    try {
+      await openConversation({ username });
+      usernameInput.value = '';
+    } catch (error) {
+      showFeedback(form, resolveErrorMessage(error));
+    } finally {
+      setFormPending(form, false);
+    }
+  }
+
+  async function openConversation({ userId = 0, username = '', pushHistory = true, restoreOnFailure = true }) {
+    const previousUserId = getSelectedUserId();
+    const url = new URL(endpoints.thread, window.location.origin);
+
+    if (userId > 0) {
+      url.searchParams.set('user_id', String(userId));
+    } else if (username !== '') {
+      url.searchParams.set('username', username);
+    } else {
+      throw new Error('Aucune conversation sélectionnée.');
+    }
+
+    try {
+      const payload = await requestJson(url.toString());
+      applyThreadPayload(payload, pushHistory);
+      return payload;
+    } catch (error) {
+      if (restoreOnFailure && previousUserId > 0) {
+        setConversationActive(previousUserId);
+      }
+
+      throw error;
+    }
+  }
+
+  function applyThreadPayload(payload, pushHistory) {
+    if (!payload?.conversation || !Array.isArray(payload.thread) || !Array.isArray(payload.conversations)) {
+      throw new Error(texts.errorGeneric);
+    }
+
+    syncConversations(payload.conversations, payload.conversation.userId);
+    activateConversation(payload.conversation, pushHistory);
+    renderThread(payload.thread);
+    applyReadState(Number(payload.lastReadMessageId || 0));
+  }
+
+  async function pollConversation() {
+    const selectedUserId = getSelectedUserId();
+    if (selectedUserId <= 0 || state.pollInFlight) {
+      return;
+    }
+
+    state.pollInFlight = true;
+
+    try {
+      const url = new URL(endpoints.poll, window.location.origin);
+      url.searchParams.set('user_id', String(selectedUserId));
+      url.searchParams.set('after_id', String(getLatestMessageId()));
+
+      const payload = await requestJson(url.toString());
+      if (getSelectedUserId() !== selectedUserId) {
+        return;
+      }
+
+      if (Array.isArray(payload.conversations)) {
+        syncConversations(payload.conversations, selectedUserId);
+      }
+
+      if (Array.isArray(payload.messages)) {
+        payload.messages.forEach((message) => appendMessage(message, false));
+      }
+
+      applyReadState(Number(payload.lastReadMessageId || 0));
+    } catch (error) {
+      // On garde le polling silencieux pour éviter de polluer l'UI à chaque tentative ratée.
+      console.error(error);
+    } finally {
+      state.pollInFlight = false;
+      schedulePoll();
+    }
+  }
+
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...requestHeaders,
+        ...(options.headers || {}),
+      },
     });
 
     const contentType = response.headers.get('Content-Type') || '';
@@ -92,22 +280,13 @@
     return payload;
   }
 
-  function activateConversation(conversation) {
-    const thread = page.querySelector('[data-messages-thread]');
-    const idleState = thread?.querySelector('[data-messages-idle-state]');
-    const activeState = thread?.querySelector('[data-messages-active-state]');
-    const target = thread?.querySelector('[data-messages-thread-target]');
-    const replyForm = thread?.querySelector('[data-message-send-form][data-message-mode="reply"]');
-    const replyReceiver = replyForm?.querySelector('input[name="receiver_id"]');
-    const emptyState = thread?.querySelector('[data-messages-empty-thread]');
-    const list = thread?.querySelector('[data-message-list]');
-
-    if (!(thread instanceof HTMLElement) || !(activeState instanceof HTMLElement)) {
+  function activateConversation(conversation, pushHistory = true) {
+    if (!(threadPanel instanceof HTMLElement) || !(activeState instanceof HTMLElement)) {
       return;
     }
 
-    thread.dataset.selectedUserId = String(conversation.userId);
-    thread.dataset.selectedUsername = conversation.username;
+    threadPanel.dataset.selectedUserId = String(conversation.userId);
+    threadPanel.dataset.selectedUsername = conversation.username;
 
     if (idleState instanceof HTMLElement) {
       idleState.hidden = true;
@@ -115,125 +294,161 @@
 
     activeState.hidden = false;
 
-    if (target instanceof HTMLElement) {
-      target.hidden = false;
-      target.textContent = conversation.username;
+    if (threadTarget instanceof HTMLElement) {
+      threadTarget.hidden = false;
+      threadTarget.textContent = conversation.username;
     }
 
     if (replyReceiver instanceof HTMLInputElement) {
       replyReceiver.value = String(conversation.userId);
     }
 
-    if (
-      emptyState instanceof HTMLElement
-      && (!(list instanceof HTMLElement) || list.children.length === 0)
-    ) {
-      emptyState.hidden = false;
-      emptyState.textContent = texts.emptyThread;
+    if (emptyThread instanceof HTMLElement && (!(messageList instanceof HTMLElement) || messageList.children.length === 0)) {
+      emptyThread.hidden = false;
+      emptyThread.textContent = texts.emptyThread;
     }
 
-    if (list instanceof HTMLElement) {
-      list.hidden = list.children.length === 0;
+    if (messageList instanceof HTMLElement) {
+      messageList.hidden = messageList.children.length === 0;
     }
 
-    if (window.location.pathname + window.location.search !== conversation.threadUrl) {
+    setConversationActive(conversation.userId);
+
+    if (pushHistory && window.location.pathname + window.location.search !== conversation.threadUrl) {
       window.history.pushState({}, '', conversation.threadUrl);
     }
+
+    startPolling();
   }
 
-  function appendMessage(message) {
-    const thread = page.querySelector('[data-messages-thread]');
-    const list = thread?.querySelector('[data-message-list]');
-    const emptyState = thread?.querySelector('[data-messages-empty-thread]');
-
-    if (!(list instanceof HTMLElement)) {
+  function deactivateConversation() {
+    if (!(threadPanel instanceof HTMLElement)) {
       return;
     }
 
-    const existing = list.querySelector(`[data-message-id="${cssEscape(String(message.id))}"]`);
+    threadPanel.dataset.selectedUserId = '0';
+    threadPanel.dataset.selectedUsername = '';
+
+    if (idleState instanceof HTMLElement) {
+      idleState.hidden = false;
+    }
+
+    if (activeState instanceof HTMLElement) {
+      activeState.hidden = true;
+    }
+
+    setConversationActive(0);
+    stopPolling();
+  }
+
+  function appendMessage(message, smooth = true) {
+    if (!(messageList instanceof HTMLElement)) {
+      return;
+    }
+
+    const existing = messageList.querySelector(`[data-message-id="${cssEscape(String(message.id))}"]`);
     if (existing instanceof HTMLElement) {
       return;
     }
 
-    list.hidden = false;
-    if (emptyState instanceof HTMLElement) {
-      emptyState.hidden = true;
+    messageList.hidden = false;
+    if (emptyThread instanceof HTMLElement) {
+      emptyThread.hidden = true;
     }
 
-    list.append(createMessageBubble(message));
-    list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const bubble = createMessageBubble(message);
+    messageList.append(bubble);
+    bubble.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' });
   }
 
   function renderThread(messages) {
-    const thread = page.querySelector('[data-messages-thread]');
-    const list = thread?.querySelector('[data-message-list]');
-    const emptyState = thread?.querySelector('[data-messages-empty-thread]');
-
-    if (!(list instanceof HTMLElement)) {
+    if (!(messageList instanceof HTMLElement)) {
       return;
     }
 
-    list.replaceChildren();
+    messageList.replaceChildren();
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      list.hidden = true;
-      if (emptyState instanceof HTMLElement) {
-        emptyState.hidden = false;
-        emptyState.textContent = texts.emptyThread;
+      messageList.hidden = true;
+      if (emptyThread instanceof HTMLElement) {
+        emptyThread.hidden = false;
+        emptyThread.textContent = texts.emptyThread;
       }
       return;
     }
 
     messages.forEach((message) => {
-      list.append(createMessageBubble(message));
+      messageList.append(createMessageBubble(message));
     });
 
-    list.hidden = false;
-    if (emptyState instanceof HTMLElement) {
-      emptyState.hidden = true;
+    messageList.hidden = false;
+    if (emptyThread instanceof HTMLElement) {
+      emptyThread.hidden = true;
     }
-    list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    messageList.lastElementChild?.scrollIntoView({ behavior: 'auto', block: 'end' });
   }
 
-  function upsertConversation(conversation) {
-    const list = page.querySelector('[data-messages-conversation-list]');
-    const emptyState = page.querySelector('[data-messages-conversations-empty]');
-
-    if (!(list instanceof HTMLElement)) {
+  function syncConversations(conversations, activeUserId) {
+    if (!(conversationList instanceof HTMLElement)) {
       return;
     }
 
-    let item = list.querySelector(`[data-user-id="${cssEscape(String(conversation.userId))}"]`);
-    if (!(item instanceof HTMLElement)) {
-      item = createConversationItem(conversation);
+    if (!Array.isArray(conversations) || conversations.length === 0) {
+      conversationList.replaceChildren();
+      conversationList.hidden = true;
+      if (conversationsEmpty instanceof HTMLElement) {
+        conversationsEmpty.hidden = false;
+      }
+      return;
     }
 
-    const dateNode = item.querySelector('[data-conversation-date]');
-    if (dateNode instanceof HTMLElement) {
-      dateNode.textContent = conversation.lastMessageAt;
-    }
-
-    list.hidden = false;
-    list.prepend(item);
-
-    if (emptyState instanceof HTMLElement) {
-      emptyState.hidden = true;
-    }
-
-    list.querySelectorAll('[data-conversation-item]').forEach((node) => {
-      node.classList.toggle('is-active', node === item);
+    const fragment = document.createDocumentFragment();
+    conversations.forEach((conversation) => {
+      fragment.append(createConversationItem(conversation, activeUserId));
     });
+
+    conversationList.replaceChildren(fragment);
+    conversationList.hidden = false;
+    if (conversationsEmpty instanceof HTMLElement) {
+      conversationsEmpty.hidden = true;
+    }
   }
 
-  function createConversationItem(conversation) {
+  function upsertConversation(conversation) {
+    if (!(conversationList instanceof HTMLElement)) {
+      return;
+    }
+
+    const activeUserId = Number(conversation.userId || 0);
+    const existing = conversationList.querySelector(`[data-user-id="${cssEscape(String(activeUserId))}"]`);
+    const item = createConversationItem(conversation, activeUserId);
+
+    if (existing instanceof HTMLElement) {
+      existing.replaceWith(item);
+    }
+
+    conversationList.prepend(item);
+    conversationList.hidden = false;
+    if (conversationsEmpty instanceof HTMLElement) {
+      conversationsEmpty.hidden = true;
+    }
+
+    setConversationActive(activeUserId);
+  }
+
+  function createConversationItem(conversation, activeUserId) {
     const article = document.createElement('article');
-    article.className = 'conversation-item is-active';
+    const isActive = Number(conversation.userId) === Number(activeUserId);
+    const unreadCount = Math.max(0, Number(conversation.unreadCount || 0));
+
+    article.className = `conversation-item${isActive ? ' is-active' : ''}${unreadCount > 0 ? ' is-unread' : ''}`;
     article.dataset.conversationItem = '';
     article.dataset.userId = String(conversation.userId);
 
     const threadLink = document.createElement('a');
     threadLink.className = 'conversation-item__main';
     threadLink.href = conversation.threadUrl;
+    threadLink.dataset.conversationOpen = '';
 
     const avatar = document.createElement('span');
     avatar.className = 'conversation-item__avatar';
@@ -245,12 +460,23 @@
     const username = document.createElement('strong');
     username.textContent = conversation.username;
 
+    const meta = document.createElement('span');
+    meta.className = 'conversation-item__meta';
+
     const date = document.createElement('small');
     date.dataset.conversationDate = '';
-    date.textContent = conversation.lastMessageAt;
+    date.textContent = conversation.lastMessageAt || '';
 
+    const unreadBadge = document.createElement('span');
+    unreadBadge.className = 'conversation-item__unread';
+    unreadBadge.dataset.conversationUnread = '';
+    unreadBadge.textContent = String(unreadCount);
+    unreadBadge.hidden = unreadCount <= 0;
+
+    meta.appendChild(date);
+    meta.appendChild(unreadBadge);
     copy.appendChild(username);
-    copy.appendChild(date);
+    copy.appendChild(meta);
     threadLink.appendChild(avatar);
     threadLink.appendChild(copy);
 
@@ -270,6 +496,7 @@
     article.className = `message-bubble${message.isMine ? ' is-mine' : ''}`;
     article.dataset.messageItem = '';
     article.dataset.messageId = String(message.id);
+    article.dataset.messageIsMine = message.isMine ? '1' : '0';
 
     const head = document.createElement('div');
     head.className = 'message-bubble__head';
@@ -288,7 +515,118 @@
     article.appendChild(head);
     article.appendChild(content);
 
+    if (message.isMine) {
+      const stateLabel = document.createElement('small');
+      stateLabel.dataset.messageReadState = '';
+      stateLabel.className = `message-bubble__state ${message.isRead ? 'is-read' : 'is-unread'}`;
+      stateLabel.textContent = message.isRead ? texts.read : texts.unread;
+      article.appendChild(stateLabel);
+    }
+
     return article;
+  }
+
+  function applyReadState(lastReadMessageId) {
+    if (!(messageList instanceof HTMLElement)) {
+      return;
+    }
+
+    messageList.querySelectorAll('[data-message-item][data-message-is-mine="1"]').forEach((node) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
+
+      const messageId = Number(node.dataset.messageId || 0);
+      setMessageReadState(node, messageId > 0 && messageId <= lastReadMessageId);
+    });
+  }
+
+  function setMessageReadState(node, isRead) {
+    const label = node.querySelector('[data-message-read-state]');
+    if (!(label instanceof HTMLElement)) {
+      return;
+    }
+
+    label.textContent = isRead ? texts.read : texts.unread;
+    label.classList.toggle('is-read', isRead);
+    label.classList.toggle('is-unread', !isRead);
+  }
+
+  function setConversationActive(activeUserId) {
+    if (!(conversationList instanceof HTMLElement)) {
+      return;
+    }
+
+    conversationList.querySelectorAll('[data-conversation-item]').forEach((node) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
+
+      node.classList.toggle('is-active', Number(node.dataset.userId || 0) === Number(activeUserId));
+    });
+  }
+
+  function getSelectedUserId() {
+    return Number(threadPanel?.getAttribute('data-selected-user-id') || 0);
+  }
+
+  function getLatestMessageId() {
+    if (!(messageList instanceof HTMLElement)) {
+      return 0;
+    }
+
+    const last = messageList.lastElementChild;
+    if (!(last instanceof HTMLElement)) {
+      return 0;
+    }
+
+    return Number(last.dataset.messageId || 0);
+  }
+
+  function getLatestReadMessageIdFromDom() {
+    if (!(messageList instanceof HTMLElement)) {
+      return 0;
+    }
+
+    let lastReadMessageId = 0;
+    messageList.querySelectorAll('[data-message-item][data-message-is-mine="1"]').forEach((node) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
+
+      const state = node.querySelector('[data-message-read-state]');
+      if (!(state instanceof HTMLElement) || !state.classList.contains('is-read')) {
+        return;
+      }
+
+      lastReadMessageId = Math.max(lastReadMessageId, Number(node.dataset.messageId || 0));
+    });
+
+    return lastReadMessageId;
+  }
+
+  function startPolling() {
+    stopPolling();
+    schedulePoll();
+  }
+
+  function stopPolling() {
+    if (state.pollTimer > 0) {
+      window.clearTimeout(state.pollTimer);
+      state.pollTimer = 0;
+    }
+  }
+
+  function schedulePoll() {
+    stopPolling();
+
+    if (getSelectedUserId() <= 0) {
+      return;
+    }
+
+    state.pollTimer = window.setTimeout(() => {
+      void pollConversation();
+    }, 5000);
   }
 
   function showFeedback(form, message) {

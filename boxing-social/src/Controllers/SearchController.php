@@ -38,12 +38,53 @@ final class SearchController
         }
 
         $query = trim((string) $request->input('q', ''));
+        $scope = (string) $request->input('scope', 'all');
+        if (!in_array($scope, ['all', 'users', 'posts'], true)) {
+            $scope = 'all';
+        }
+
+        $postTypeFilter = (string) $request->input('post_type', 'all');
+        if (!in_array($postTypeFilter, ['all', 'publication', 'entrainement'], true)) {
+            $postTypeFilter = 'all';
+        }
+
+        $usersPerPage = 8;
+        $postsPerPage = 8;
+        $usersPage = max(1, (int) $request->input('users_page', 1));
+        $postsPage = max(1, (int) $request->input('posts_page', 1));
+
         $users = [];
         $posts = [];
+        $usersCount = 0;
+        $postsCount = 0;
+        $usersTotalPages = 1;
+        $postsTotalPages = 1;
 
         if ($query !== '') {
-            $users = $this->search->searchUsers($query);
-            $posts = $this->search->searchPosts($query);
+            $usersCount = $this->search->countUsers($query);
+            $postsCount = $this->search->countPosts($query, $postTypeFilter);
+
+            $usersTotalPages = max(1, (int) ceil($usersCount / $usersPerPage));
+            $postsTotalPages = max(1, (int) ceil($postsCount / $postsPerPage));
+            $usersPage = min($usersPage, $usersTotalPages);
+            $postsPage = min($postsPage, $postsTotalPages);
+
+            if ($scope !== 'posts') {
+                $users = $this->search->searchUsers(
+                    $query,
+                    $usersPerPage,
+                    ($usersPage - 1) * $usersPerPage
+                );
+            }
+
+            if ($scope !== 'users') {
+                $posts = $this->search->searchPosts(
+                    $query,
+                    $postTypeFilter,
+                    $postsPerPage,
+                    ($postsPage - 1) * $postsPerPage
+                );
+            }
         }
 
         require dirname(__DIR__, 2) . '/templates/search/index.php';

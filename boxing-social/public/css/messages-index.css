@@ -187,10 +187,15 @@
   padding: 14px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.04);
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
 
 .conversation-item.is-active {
   background: rgba(187, 73, 61, 0.14);
+}
+
+.conversation-item.is-unread {
+  box-shadow: inset 0 0 0 1px rgba(187, 73, 61, 0.18);
 }
 
 .conversation-item__main {
@@ -217,6 +222,7 @@
 .conversation-item__copy {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .conversation-item__copy strong {
@@ -225,6 +231,35 @@
 
 .conversation-item__copy small {
   color: #ad9f8d;
+}
+
+.conversation-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.conversation-item__meta small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item__unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #BB493D;
+  color: #fff8ed;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
 .conversation-item__profile {
@@ -288,10 +323,29 @@
   white-space: pre-line;
 }
 
+.message-bubble__state {
+  display: inline-flex;
+  margin-top: 10px;
+  color: #b3a694;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.message-bubble__state.is-read {
+  color: #d8d0c3;
+}
+
+.message-bubble__state.is-unread {
+  color: #9f9180;
+}
+
 .messages-send-form--reply {
   margin-top: 18px;
 }
 
+.messages-open-form .interaction-feedback,
 .messages-send-form .interaction-feedback {
   margin: 0;
 }

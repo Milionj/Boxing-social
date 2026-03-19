@@ -120,6 +120,45 @@ final class User
         return $stmt->fetchAll() ?: [];
     }
 
+    public function searchForAdmin(array $filters = [], int $limit = 25, int $offset = 0): array
+    {
+        $params = [];
+        $where = $this->adminUsersWhere($filters, $params);
+
+        $stmt = $this->pdo->prepare(
+            'SELECT u.id, u.username, u.email, u.role, u.is_active, u.created_at, u.bio
+             FROM users u
+             ' . $where . '
+             ORDER BY u.created_at DESC, u.id DESC
+             LIMIT :lim OFFSET :off'
+        );
+
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countForAdmin(array $filters = []): int
+    {
+        $params = [];
+        $where = $this->adminUsersWhere($filters, $params);
+
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*)
+             FROM users u
+             ' . $where
+        );
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function setActiveByAdmin(int $userId, bool $isActive): bool
     {
         $stmt = $this->pdo->prepare(
@@ -132,5 +171,36 @@ final class User
             'is_active' => $isActive ? 1 : 0,
             'id' => $userId,
         ]);
+    }
+
+    private function adminUsersWhere(array $filters, array &$params): string
+    {
+        $clauses = ['WHERE 1=1'];
+        $query = trim((string) ($filters['query'] ?? ''));
+        $role = (string) ($filters['role'] ?? '');
+        $status = (string) ($filters['status'] ?? '');
+
+        if ($query !== '') {
+            $params['query_username_like'] = '%' . $query . '%';
+            $params['query_email_like'] = '%' . $query . '%';
+            $params['query_id_like'] = '%' . $query . '%';
+            $clauses[] = 'AND (
+                u.username LIKE :query_username_like
+                OR u.email LIKE :query_email_like
+                OR CAST(u.id AS CHAR) LIKE :query_id_like
+            )';
+        }
+
+        if (in_array($role, ['user', 'admin'], true)) {
+            $params['role'] = $role;
+            $clauses[] = 'AND u.role = :role';
+        }
+
+        if ($status === 'active' || $status === 'disabled') {
+            $params['is_active'] = $status === 'active' ? 1 : 0;
+            $clauses[] = 'AND u.is_active = :is_active';
+        }
+
+        return implode("\n", $clauses);
     }
 }

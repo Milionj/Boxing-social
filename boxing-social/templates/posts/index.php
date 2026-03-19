@@ -5,12 +5,14 @@
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('posts_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/posts-index.css?v=20260315n">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260317d">
 </head>
 <body
   class="app-shell"
   data-post-interaction-error="<?= htmlspecialchars($t->text('posts_interaction_error'), ENT_QUOTES, 'UTF-8') ?>"
   data-comment-delete-label="<?= htmlspecialchars($t->text('posts_delete_comment'), ENT_QUOTES, 'UTF-8') ?>"
+  data-sports-schedule-endpoint="/sports/mma/schedule"
+  data-sports-event-endpoint="/sports/mma/event"
 >
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
   <main class="posts-page app-main">
@@ -32,7 +34,7 @@
       </section>
 
       <aside class="feed-side-rail" aria-label="Raccourci amis">
-        <section class="feed-side-card">
+        <section class="feed-side-card feed-side-card--sports">
           <div class="feed-side-card__head">
             <div>
               <p class="feed-side-card__eyebrow">Amis</p>
@@ -54,10 +56,21 @@
             </div>
           <?php endif; ?>
         </section>
+
+        <section class="feed-side-card">
+          <div class="feed-side-card__head">
+            <div>
+              <p class="feed-side-card__eyebrow">MMA</p>
+              <h2><?= htmlspecialchars($t->text('sports_preview_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+          </div>
+
+          <div class="feed-side-sports" data-inline-sports-widget data-sports-season="<?= (int) date('Y') ?>"></div>
+        </section>
       </aside>
     </div>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/post-interactions.js?v=20260316a" defer></script>
+  <script src="/js/post-interactions.js?v=20260317g" defer></script>
 </body>
 </html>

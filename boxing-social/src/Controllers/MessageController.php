@@ -111,10 +111,11 @@ final class MessageController
             'content' => (string) $message['content'],
             'createdAt' => (string) $message['created_at'],
             'isMine' => (int) $message['sender_id'] === $currentUserId,
+            'isRead' => (int) $message['is_read'] === 1,
         ];
     }
 
-    private function conversationPayload(array $receiver, array $message): array
+    private function conversationPayload(array $receiver, string $lastMessageAt = '', int $unreadCount = 0): array
     {
         $receiverId = (int) $receiver['id'];
         $username = (string) $receiver['username'];
@@ -124,7 +125,116 @@ final class MessageController
             'username' => $username,
             'threadUrl' => '/messages?user_id=' . $receiverId,
             'profileUrl' => '/user?username=' . rawurlencode($username),
-            'lastMessageAt' => (string) $message['created_at'],
+            'lastMessageAt' => $lastMessageAt,
+            'unreadCount' => $unreadCount,
+        ];
+    }
+
+    private function conversationListPayload(array $conversation): array
+    {
+        return [
+            'userId' => (int) $conversation['other_user_id'],
+            'username' => (string) $conversation['username'],
+            'threadUrl' => '/messages?user_id=' . (int) $conversation['other_user_id'],
+            'profileUrl' => '/user?username=' . rawurlencode((string) $conversation['username']),
+            'lastMessageAt' => (string) ($conversation['last_message_at'] ?? ''),
+            'unreadCount' => max(0, (int) ($conversation['unread_count'] ?? 0)),
+        ];
+    }
+
+    private function serializeConversations(array $conversations): array
+    {
+        return array_map(
+            fn(array $conversation): array => $this->conversationListPayload($conversation),
+            $conversations
+        );
+    }
+
+    private function hasConversationSelection(Request $request): bool
+    {
+        return (int) $request->input('user_id', 0) > 0
+            || trim((string) $request->input('username', '')) !== '';
+    }
+
+    private function resolveSelectedConversation(Request $request, int $currentUserId): array
+    {
+        $selectedUsername = trim((string) $request->input('username', ''));
+        $selectedUserId = (int) $request->input('user_id', 0);
+
+        if ($selectedUserId <= 0 && $selectedUsername !== '') {
+            $selectedUser = $this->users->findByUsername($selectedUsername);
+            $selectedUserId = (int) ($selectedUser['id'] ?? 0);
+        }
+
+        $selectedUser = null;
+
+        if ($selectedUserId > 0 && $selectedUserId !== $currentUserId) {
+            $selectedUser = $this->users->findById($selectedUserId);
+        }
+
+        if ($selectedUser === null || (int) $selectedUser['id'] === $currentUserId) {
+            return [0, null, ''];
+        }
+
+        return [
+            (int) $selectedUser['id'],
+            $selectedUser,
+            (string) $selectedUser['username'],
+        ];
+    }
+
+    private function ensureSelectedConversationListed(array $conversations, ?array $selectedUser, array $thread): array
+    {
+        if ($selectedUser === null) {
+            return $conversations;
+        }
+
+        $selectedUserId = (int) $selectedUser['id'];
+
+        foreach ($conversations as $conversation) {
+            if ((int) ($conversation['other_user_id'] ?? 0) === $selectedUserId) {
+                return $conversations;
+            }
+        }
+
+        $lastMessage = $thread[array_key_last($thread)] ?? null;
+
+        array_unshift($conversations, [
+            'other_user_id' => $selectedUserId,
+            'username' => (string) $selectedUser['username'],
+            'last_message_at' => (string) ($lastMessage['created_at'] ?? ''),
+            'unread_count' => 0,
+        ]);
+
+        return $conversations;
+    }
+
+    private function threadResponsePayload(
+        int $currentUserId,
+        array $conversations,
+        ?array $selectedUser,
+        array $thread
+    ): array {
+        $lastMessage = $thread[array_key_last($thread)] ?? null;
+        $selectedUserId = (int) ($selectedUser['id'] ?? 0);
+
+        return [
+            'ok' => true,
+            'conversation' => $selectedUser !== null
+                ? $this->conversationPayload(
+                    $selectedUser,
+                    (string) ($lastMessage['created_at'] ?? ''),
+                    0
+                )
+                : null,
+            'conversations' => $this->serializeConversations($conversations),
+            'thread' => array_map(
+                fn(array $item): array => $this->messagePayload($item, $currentUserId),
+                $thread
+            ),
+            'lastReadMessageId' => $selectedUserId > 0
+                ? $this->messages->getLastReadOwnMessageId($currentUserId, $selectedUserId)
+                : 0,
         ];
     }
 
@@ -148,44 +258,17 @@ final class MessageController
             return;
         }
 
-        // 2) Liste des conversations (interlocuteurs + date dernier message)
-        $conversations = $this->messages->getConversations($userId);
+        [$selectedUserId, $selectedUser, $selectedUsername] = $this->resolveSelectedConversation($request, $userId);
 
-        // On autorise l'ouverture d'une conversation par pseudo pour ne plus exposer l'ID dans le formulaire.
-        $selectedUsername = trim((string) $request->input('username', ''));
-        $selectedUserId = (int) $request->input('user_id', 0);
-
-        if ($selectedUserId <= 0 && $selectedUsername !== '') {
-            $selectedUser = $this->users->findByUsername($selectedUsername);
-            $selectedUserId = (int) ($selectedUser['id'] ?? 0);
-        }
-
-        // Fil de discussion (vide par défaut)
         $thread = [];
-
-        // 4) Validation de l'interlocuteur sélectionné :
-        // - id > 0
-        // - pas soi-même
-        // - utilisateur existant
-        $selectedUser = null;
-
-        if ($selectedUserId > 0 && $selectedUserId !== $userId) {
-            $selectedUser = $this->users->findById($selectedUserId);
-        }
-
-        if ($selectedUser !== null && (int) $selectedUser['id'] !== $userId) {
-            // Charge tous les messages de la conversation (dans les 2 sens)
-            $thread = $this->messages->getConversationMessages($userId, $selectedUserId);
-
-            // Marque comme lus les messages reçus de cet interlocuteur
+        if ($selectedUser !== null) {
             $this->messages->markConversationRead($userId, $selectedUserId);
-        } else {
-            // Si user_id invalide, on "désélectionne" la conversation
-            $selectedUserId = 0;
-            $selectedUser = null;
+            $thread = $this->messages->getConversationMessages($userId, $selectedUserId);
         }
 
-        $selectedUsername = (string) ($selectedUser['username'] ?? '');
+        // Liste calculée après marquage comme lu pour éviter un compteur obsolète.
+        $conversations = $this->messages->getConversations($userId);
+        $conversations = $this->ensureSelectedConversationListed($conversations, $selectedUser, $thread);
 
         // 5) Messages flash (succès / erreurs), affichés une seule fois
         $errors = $_SESSION['errors_messages'] ?? [];
@@ -195,6 +278,69 @@ final class MessageController
 
         // 6) Affichage du template de messagerie
         require dirname(__DIR__, 2) . '/templates/messages/index.php';
+    }
+
+    public function thread(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
+
+        [$selectedUserId, $selectedUser] = $this->resolveSelectedConversation($request, $userId);
+
+        if ($selectedUser === null) {
+            $response->json([
+                'ok' => false,
+                'message' => $this->hasConversationSelection($request)
+                    ? 'Conversation introuvable.'
+                    : 'Aucune conversation sélectionnée.',
+            ], $this->hasConversationSelection($request) ? 404 : 422);
+            return;
+        }
+
+        $this->messages->markConversationRead($userId, $selectedUserId);
+        $thread = $this->messages->getConversationMessages($userId, $selectedUserId);
+        $conversations = $this->messages->getConversations($userId);
+        $conversations = $this->ensureSelectedConversationListed($conversations, $selectedUser, $thread);
+
+        $response->json($this->threadResponsePayload($userId, $conversations, $selectedUser, $thread));
+    }
+
+    public function poll(Request $request, Response $response): void
+    {
+        $userId = $this->requireAuth($response, $request);
+        if ($userId === null) {
+            return;
+        }
+
+        [$selectedUserId, $selectedUser] = $this->resolveSelectedConversation($request, $userId);
+
+        if ($selectedUser === null) {
+            $response->json([
+                'ok' => false,
+                'message' => 'Conversation introuvable.',
+            ], 404);
+            return;
+        }
+
+        $afterId = max(0, (int) $request->input('after_id', 0));
+        $newMessages = $this->messages->getConversationMessagesAfter($userId, $selectedUserId, $afterId);
+
+        // Toute nouvelle entrée reçue depuis l'interlocuteur devient lue dès que le fil est actif.
+        $this->messages->markConversationRead($userId, $selectedUserId);
+        $conversations = $this->messages->getConversations($userId);
+        $conversations = $this->ensureSelectedConversationListed($conversations, $selectedUser, []);
+
+        $response->json([
+            'ok' => true,
+            'messages' => array_map(
+                fn(array $item): array => $this->messagePayload($item, $userId),
+                $newMessages
+            ),
+            'conversations' => $this->serializeConversations($conversations),
+            'lastReadMessageId' => $this->messages->getLastReadOwnMessageId($userId, $selectedUserId),
+        ]);
     }
 
     /**
@@ -266,12 +412,13 @@ final class MessageController
             $response->json([
                 'ok' => true,
                 'message' => 'Message envoyé.',
-                'conversation' => $this->conversationPayload($receiver, $message),
+                'conversation' => $this->conversationPayload($receiver, (string) $message['created_at'], 0),
                 'messageItem' => $this->messagePayload($message, $userId),
                 'thread' => array_map(
                     fn(array $item): array => $this->messagePayload($item, $userId),
                     $this->messages->getConversationMessages($userId, $receiverId)
                 ),
+                'lastReadMessageId' => $this->messages->getLastReadOwnMessageId($userId, $receiverId),
             ]);
             return;
         }

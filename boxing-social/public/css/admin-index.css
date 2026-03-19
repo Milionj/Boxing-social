@@ -114,6 +114,90 @@
   line-height: 1;
 }
 
+.admin-card__summary {
+  margin: 4px 0 0;
+  color: #bfb3a1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-filters label {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-filters label span {
+  color: #bfb3a1;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-filters input,
+.admin-filters select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(13, 16, 19, 0.82);
+  color: #f7f0e4;
+  font: inherit;
+}
+
+.admin-filters__actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.admin-filters__actions button,
+.admin-filters__actions a,
+.admin-card button,
+.admin-link-chip,
+.admin-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #9d2c20;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.admin-filters__actions a,
+.admin-link-chip,
+.admin-pagination__link {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff0dc;
+}
+
+.admin-filters__actions button:hover,
+.admin-filters__actions a:hover,
+.admin-card button:hover,
+.admin-link-chip:hover,
+.admin-pagination__link:hover {
+  transform: translateY(-1px);
+}
+
 .admin-table-wrap {
   overflow: auto;
   border-radius: 18px;
@@ -122,7 +206,7 @@
 .admin-card table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 780px;
+  min-width: 980px;
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -149,27 +233,77 @@
   text-decoration: none;
 }
 
-.admin-card button {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: #9D2C20;
-  color: #fff;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.admin-card button:hover {
-  background: #9D2C20;
-}
-
 .admin-card form {
   margin: 0;
 }
 
+.admin-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-meta strong {
+  color: #fff8ed;
+}
+
+.admin-meta span {
+  color: #d5c9b8;
+  line-height: 1.5;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f3e8d9;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-tag--muted {
+  background: rgba(255, 255, 255, 0.05);
+  color: #b9ae9e;
+}
+
+.admin-log-details {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-log-details li {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-log-details span {
+  color: #b4a998;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-log-details strong {
+  color: #f6ecdf;
+  line-height: 1.5;
+}
+
 .admin-empty,
-.admin-note {
+.admin-note,
+.admin-empty-inline {
   color: #ccbfae;
   line-height: 1.6;
 }
@@ -178,9 +312,51 @@
   margin: 16px 0 0;
 }
 
+.admin-empty-inline {
+  opacity: 0.76;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-pagination__status {
+  color: #d4c8b8;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .admin-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .admin-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-card__head {
+    flex-direction: column;
+    align-items: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-filters__actions,
+  .admin-actions,
+  .admin-pagination {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

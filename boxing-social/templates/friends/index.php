@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('friends_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/friends-index.css?v=20260315o">
+  <link rel="stylesheet" href="/css/friends-index.css?v=20260317a">
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-navbar.php'; ?>
@@ -124,7 +124,12 @@
           <?php if (!empty($outgoing)): ?>
             <div class="friends-list" data-friends-outgoing-list>
               <?php foreach ($outgoing as $req): ?>
-                <article class="friend-row friend-row--simple">
+                <article
+                  class="friend-row friend-row--simple"
+                  data-social-scope
+                  data-friendship-row
+                  data-friendship-id="<?= (int) $req['id'] ?>"
+                >
                   <div class="friend-row__identity">
                     <div class="friend-row__avatar"><?= htmlspecialchars(strtoupper(substr((string) $req['addressee_username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></div>
                     <div>
@@ -136,9 +141,16 @@
                       <p><?= htmlspecialchars($t->text('friends_pending_with'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                   </div>
-                  <a class="friend-row__profile-link" href="/user?username=<?= rawurlencode((string) $req['addressee_username']) ?>">
-                    <?= htmlspecialchars($t->text('friends_open_profile'), ENT_QUOTES, 'UTF-8') ?>
-                  </a>
+                  <div class="friend-row__actions">
+                    <a class="friend-row__profile-link" href="/user?username=<?= rawurlencode((string) $req['addressee_username']) ?>">
+                      <?= htmlspecialchars($t->text('friends_open_profile'), ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                    <form method="post" action="/friends/cancel" data-friend-cancel-form>
+                      <input type="hidden" name="friendship_id" value="<?= (int) $req['id'] ?>">
+                      <button class="button-secondary" type="submit"><?= htmlspecialchars($t->text('friends_cancel'), ENT_QUOTES, 'UTF-8') ?></button>
+                    </form>
+                  </div>
+                  <p class="interaction-feedback" data-interaction-feedback hidden></p>
                 </article>
               <?php endforeach; ?>
             </div>
@@ -159,16 +171,23 @@
           <?php if (!empty($friends)): ?>
             <div class="friends-grid" data-friends-grid>
               <?php foreach ($friends as $friend): ?>
-                <article class="friend-tile">
+                <article class="friend-tile" data-social-scope data-friendship-row data-friendship-id="<?= (int) ($friend['friendship_id'] ?? 0) ?>">
                   <div class="friend-tile__avatar"><?= htmlspecialchars(strtoupper(substr((string) $friend['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></div>
                   <h3>
                     <a href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
                       <?= htmlspecialchars((string) $friend['username'], ENT_QUOTES, 'UTF-8') ?>
                     </a>
                   </h3>
-                  <a class="friend-tile__link" href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
-                    <?= htmlspecialchars($t->text('friends_open_profile'), ENT_QUOTES, 'UTF-8') ?>
-                  </a>
+                  <div class="friend-tile__actions">
+                    <a class="friend-tile__link" href="/user?username=<?= rawurlencode((string) $friend['username']) ?>">
+                      <?= htmlspecialchars($t->text('friends_open_profile'), ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                    <form method="post" action="/friends/remove" data-friend-remove-form>
+                      <input type="hidden" name="friendship_id" value="<?= (int) ($friend['friendship_id'] ?? 0) ?>">
+                      <button class="button-secondary" type="submit"><?= htmlspecialchars($t->text('friends_remove'), ENT_QUOTES, 'UTF-8') ?></button>
+                    </form>
+                  </div>
+                  <p class="interaction-feedback" data-interaction-feedback hidden></p>
                 </article>
               <?php endforeach; ?>
             </div>

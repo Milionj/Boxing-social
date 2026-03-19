@@ -40,6 +40,7 @@ use App\Controllers\SearchController;
 use App\Controllers\ContactController;
 use App\Controllers\CookiePreferencesController;
 use App\Controllers\SettingsController;
+use App\Controllers\SportsController;
 use App\Models\Comment;
 use App\Models\Friendship;
 use App\Models\Notification;
@@ -115,22 +116,31 @@ try {
     $router->post('/friends/send', fn() => (new FriendshipController())->send($request, $response));
     $router->post('/friends/accept', fn() => (new FriendshipController())->accept($request, $response));
     $router->post('/friends/decline', fn() => (new FriendshipController())->decline($request, $response));
+    $router->post('/friends/cancel', fn() => (new FriendshipController())->cancel($request, $response));
+    $router->post('/friends/remove', fn() => (new FriendshipController())->remove($request, $response));
 
     // Notifications
     $router->get('/notifications', fn() => (new NotificationController())->index($response));
+    $router->get('/notifications/open', fn() => (new NotificationController())->open($request, $response));
     $router->post('/notifications/read', fn() => (new NotificationController())->markRead($request, $response));
     $router->post('/notifications/read-all', fn() => (new NotificationController())->markAllRead($request, $response));
 
     // Messages privés
     $router->get('/messages', fn() => (new MessageController())->index($request, $response));
+    $router->get('/messages/thread', fn() => (new MessageController())->thread($request, $response));
+    $router->get('/messages/poll', fn() => (new MessageController())->poll($request, $response));
     $router->post('/messages/send', fn() => (new MessageController())->send($request, $response));
 
     // Recherche
     $router->get('/search', fn() => (new SearchController())->index($request, $response));
     $router->get('/search/usernames', fn() => (new SearchController())->usernames($request, $response));
 
+    // Sports data
+    $router->get('/sports/mma/schedule', fn() => (new SportsController())->mmaSchedule($request, $response));
+    $router->get('/sports/mma/event', fn() => (new SportsController())->mmaEvent($request, $response));
+
     // Admin
-    $router->get('/admin', fn() => (new AdminController())->index($response));
+    $router->get('/admin', fn() => (new AdminController())->index($request, $response));
     $router->post('/admin/users/toggle', fn() => (new AdminController())->toggleUser($request, $response));
     $router->post('/admin/posts/delete', fn() => (new AdminController())->deletePost($request, $response));
     $router->post('/admin/comments/delete', fn() => (new AdminController())->deleteComment($request, $response));

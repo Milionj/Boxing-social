@@ -287,6 +287,25 @@
   margin: 0;
 }
 
+.friend-tile__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.friend-tile__actions form {
+  margin: 0;
+}
+
+.friend-tile__actions button {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 14px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .friend-row__profile-link,
 .friend-tile__link {
   display: inline-flex;
@@ -347,7 +366,10 @@
 
   .friend-row__actions form,
   .friend-row__actions button,
-  .friend-row__profile-link {
+  .friend-row__profile-link,
+  .friend-tile__actions form,
+  .friend-tile__actions button,
+  .friend-tile__link {
     width: 100%;
   }
 }

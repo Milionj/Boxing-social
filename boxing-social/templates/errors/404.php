@@ -12,6 +12,6 @@
     <p>La page demandee est introuvable.</p>
     <p><a href="/">Retour à l’accueil</a></p>
   </main>
-  <?php require dirname(__DIR__) . '/../partials/scroll-top.php'; ?>
+  <?php require dirname(__DIR__) . '/partials/scroll-top.php'; ?>
 </body>
 </html>

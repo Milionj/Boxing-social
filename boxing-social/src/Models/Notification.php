@@ -101,6 +101,32 @@ final class Notification
     }
 
     /**
+     * Retourne une notification précise si elle appartient bien à l'utilisateur.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findByIdForOwner(int $notificationId, int $userId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT n.id, n.user_id, n.actor_id, n.type, n.entity_id, n.content, n.is_read, n.created_at,
+                    u.username AS actor_username
+             FROM notifications n
+             LEFT JOIN users u ON u.id = n.actor_id
+             WHERE n.id = :id AND n.user_id = :user_id
+             LIMIT 1'
+        );
+
+        $stmt->execute([
+            'id' => $notificationId,
+            'user_id' => $userId,
+        ]);
+
+        $notification = $stmt->fetch();
+
+        return $notification ?: null;
+    }
+
+    /**
      * Compte le nombre de notifications non lues pour un utilisateur.
      * Utile pour le badge dans la navbar.
      */
