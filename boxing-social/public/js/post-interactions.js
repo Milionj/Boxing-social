@@ -8,6 +8,7 @@
     body.dataset.postInteractionError || 'Impossible de mettre à jour l’interaction pour le moment.';
   const deleteCommentLabel = body.dataset.commentDeleteLabel || 'Supprimer commentaire';
   const socialI18n = document.querySelector('[data-social-i18n]');
+  const csrfToken = socialI18n?.dataset.csrfToken || '';
   const trainingInterestAction = socialI18n?.dataset.trainingInterestAction || 'Cliquer sur le poing pour manifester votre intérêt';
   const trainingInterestSent = socialI18n?.dataset.trainingInterestSent || 'Intérêt déjà envoyé';
   const sportsScheduleEndpoint = body.dataset.sportsScheduleEndpoint || '';
@@ -27,15 +28,33 @@
   const sportsPreviewDetails = socialI18n?.dataset.sportsPreviewDetails || 'Détails';
   const sportsPreviewFights = socialI18n?.dataset.sportsPreviewFights || 'Combats';
   const sportsPreviewUpdated = socialI18n?.dataset.sportsPreviewUpdated || 'Mis à jour';
+  const feedSideCollapse = socialI18n?.dataset.feedSideCollapse || 'Replier';
+  const feedSideExpand = socialI18n?.dataset.feedSideExpand || 'Déplier';
   const sportsSeasonOptions = Array.from(
     new Set([2022, 2023, 2024, new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1])
   ).sort((left, right) => left - right);
   const sportsCache = new Map();
   const sportsEventCache = new Map();
+  const sanitizeHtml = (html) => {
+    if (window.BoxingSocialSecurity && typeof window.BoxingSocialSecurity.sanitizeHtml === 'function') {
+      return window.BoxingSocialSecurity.sanitizeHtml(html);
+    }
+
+    return escapeHtml(String(html));
+  };
+  const setSanitizedHtml = (element, html) => {
+    if (window.BoxingSocialSecurity && typeof window.BoxingSocialSecurity.setSanitizedHtml === 'function') {
+      window.BoxingSocialSecurity.setSanitizedHtml(element, html);
+      return;
+    }
+
+    element.innerHTML = sanitizeHtml(html);
+  };
 
   const requestHeaders = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
+    ...(csrfToken !== '' ? { 'X-CSRF-Token': csrfToken } : {}),
   };
   let previewState = null;
 
@@ -96,6 +115,7 @@
     }
   });
 
+  initSideCardToggles();
   initInlineSportsWidgets();
 
   async function handleLikeSubmit(form) {
@@ -240,6 +260,8 @@
       method: (form.method || 'POST').toUpperCase(),
       body: body || new FormData(form),
       headers: requestHeaders,
+      credentials: 'same-origin',
+      cache: 'no-store',
     });
 
     const contentType = response.headers.get('Content-Type') || '';
@@ -298,7 +320,7 @@
   function ensureSportsPanel(sidebar) {
     let panel = sidebar.querySelector('[data-sports-panel]');
     if (!(panel instanceof HTMLElement)) {
-      sidebar.innerHTML = `
+      setSanitizedHtml(sidebar, `
         <section class="post-preview-panel" data-sports-panel>
           <div class="post-preview-panel__head">
             <div>
@@ -317,7 +339,7 @@
           <div class="post-preview-panel__list" data-sports-panel-list></div>
           <div class="post-preview-panel__detail" data-sports-panel-detail></div>
         </section>
-      `;
+      `);
       panel = sidebar.querySelector('[data-sports-panel]');
       if (!(panel instanceof HTMLElement)) {
         throw new Error('Sports preview panel could not be created.');
@@ -551,6 +573,8 @@
 
     const response = await fetch(url.toString(), {
       headers: requestHeaders,
+      credentials: 'same-origin',
+      cache: 'no-store',
     });
 
     const contentType = response.headers.get('Content-Type') || '';
@@ -583,6 +607,8 @@
 
     const response = await fetch(url.toString(), {
       headers: requestHeaders,
+      credentials: 'same-origin',
+      cache: 'no-store',
     });
 
     const contentType = response.headers.get('Content-Type') || '';
@@ -639,13 +665,77 @@
     });
   }
 
+  function initSideCardToggles() {
+    document.querySelectorAll('[data-side-card-toggle]').forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const card = button.closest('[data-side-card]');
+      const body = card?.querySelector('[data-side-card-body]');
+      if (!(card instanceof HTMLElement) || !(body instanceof HTMLElement)) {
+        return;
+      }
+
+      const cardKey = card.dataset.sideCard || '';
+      const collapsed = readSideCardState(cardKey);
+      syncSideCard(card, button, body, collapsed);
+
+      button.addEventListener('click', () => {
+        const nextCollapsed = !card.classList.contains('is-collapsed');
+        syncSideCard(card, button, body, nextCollapsed);
+        writeSideCardState(cardKey, nextCollapsed);
+      });
+    });
+  }
+
+  function syncSideCard(card, button, body, collapsed) {
+    card.classList.toggle('is-collapsed', collapsed);
+    body.hidden = collapsed;
+    button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+
+    const label = button.querySelector('[data-side-card-toggle-label]');
+    if (label instanceof HTMLElement) {
+      label.textContent = collapsed ? feedSideExpand : feedSideCollapse;
+    }
+  }
+
+  function readSideCardState(cardKey) {
+    if (cardKey === '') {
+      return true;
+    }
+
+    try {
+      const value = window.localStorage.getItem(`boxing-social:side-card:${cardKey}`);
+      if (value === null) {
+        return true;
+      }
+
+      return value === 'collapsed';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function writeSideCardState(cardKey, collapsed) {
+    if (cardKey === '') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(`boxing-social:side-card:${cardKey}`, collapsed ? 'collapsed' : 'expanded');
+    } catch (error) {
+      // ignore storage errors
+    }
+  }
+
   function ensureInlineSportsWidget(widget) {
     let controls = widget.querySelector('[data-inline-sports-controls]');
     let status = widget.querySelector('[data-inline-sports-status]');
     let list = widget.querySelector('[data-inline-sports-list]');
 
     if (!(controls instanceof HTMLElement) || !(status instanceof HTMLElement) || !(list instanceof HTMLElement)) {
-      widget.innerHTML = `
+      setSanitizedHtml(widget, `
         <div class="feed-side-sports__controls" data-inline-sports-controls>
           <label class="feed-side-sports__season">
             <span>${escapeHtml(sportsPreviewSeason)}</span>
@@ -655,7 +745,7 @@
         </div>
         <p class="feed-side-sports__status" data-inline-sports-status></p>
         <div class="feed-side-sports__list" data-inline-sports-list></div>
-      `;
+      `);
 
       controls = widget.querySelector('[data-inline-sports-controls]');
       status = widget.querySelector('[data-inline-sports-status]');

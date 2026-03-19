@@ -16,6 +16,7 @@
   const replyReceiver = replyForm?.querySelector('input[name="receiver_id"]');
   const openForm = page.querySelector('[data-messages-open-form]');
   const socialI18n = document.querySelector('[data-social-i18n]');
+  const csrfToken = socialI18n?.dataset.csrfToken || '';
 
   const texts = {
     errorGeneric: socialI18n?.dataset.errorGeneric || 'Impossible d’envoyer le message pour le moment.',
@@ -36,6 +37,7 @@
   const requestHeaders = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
+    ...(csrfToken !== '' ? { 'X-CSRF-Token': csrfToken } : {}),
   };
 
   const state = {
@@ -260,6 +262,8 @@
         ...requestHeaders,
         ...(options.headers || {}),
       },
+      credentials: 'same-origin',
+      cache: 'no-store',
     });
 
     const contentType = response.headers.get('Content-Type') || '';

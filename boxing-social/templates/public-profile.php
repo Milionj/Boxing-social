@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('public_profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/public-profile.css?v=20260315o">
 </head>
 <body class="app-shell">

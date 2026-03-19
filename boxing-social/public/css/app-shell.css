@@ -4,6 +4,8 @@ html {
   scroll-behavior: smooth;
 }
 
+@import url('/css/cookie-notice.css?v=20260317a');
+
 :root {
   --shell-bg: #13161b;
   --shell-bg-soft: #1b2026;

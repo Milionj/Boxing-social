@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\InputValidator;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Post;
@@ -87,7 +88,7 @@ final class ProfileController
         }
 
         $username = trim((string) $request->input('username', ''));
-        $email = strtolower(trim((string) $request->input('email', '')));
+        $email = InputValidator::normalizeEmail((string) $request->input('email', ''));
         // La bio reste optionnelle, mais on borne sa taille pour garder
         // une fiche profil lisible et un stockage raisonnable.
         $bio = trim((string) $request->input('bio', ''));
@@ -100,7 +101,7 @@ final class ProfileController
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
             $errors[] = 'Le pseudo ne doit contenir que lettres, chiffres et underscore.';
         }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (!InputValidator::isValidEmail($email)) {
             $errors[] = 'Email invalide.';
         }
         if (strlen($bio) > 500) {
@@ -144,13 +145,7 @@ final class ProfileController
         $errors[] = 'Tous les champs mot de passe sont obligatoires.';
     }
 
-    if (strlen($newPassword) < 8) {
-        $errors[] = 'Le nouveau mot de passe doit contenir au moins 8 caractères.';
-    }
-
-    if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
-        $errors[] = 'Le nouveau mot de passe doit contenir une majuscule, une minuscule et un chiffre.';
-    }
+    $errors = [...$errors, ...InputValidator::passwordErrors($newPassword, 'Le nouveau mot de passe')];
 
     if ($newPassword !== $confirmPassword) {
         $errors[] = 'La confirmation du nouveau mot de passe ne correspond pas.';
@@ -158,6 +153,10 @@ final class ProfileController
 
     if (!$this->auth->verifyCurrentPassword($userId, $currentPassword)) {
         $errors[] = 'Mot de passe actuel incorrect.';
+    }
+
+    if ($currentPassword !== '' && hash_equals($currentPassword, $newPassword)) {
+        $errors[] = 'Le nouveau mot de passe doit être différent de l’actuel.';
     }
 
     if ($errors !== []) {

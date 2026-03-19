@@ -8,6 +8,7 @@ if (!isset($t) || !$t instanceof \App\Services\Translator) {
 <div
   hidden
   data-social-i18n
+  data-csrf-token="<?= htmlspecialchars((string) ($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
   data-error-generic="<?= htmlspecialchars($t->text('interaction_generic_error'), ENT_QUOTES, 'UTF-8') ?>"
   data-friend-request-sent="<?= htmlspecialchars($t->text('friends_request_sent'), ENT_QUOTES, 'UTF-8') ?>"
   data-friend-request-cancelled="<?= htmlspecialchars($t->text('friends_request_cancelled'), ENT_QUOTES, 'UTF-8') ?>"
@@ -36,11 +37,13 @@ if (!isset($t) || !$t instanceof \App\Services\Translator) {
   data-sports-preview-details="<?= htmlspecialchars($t->text('sports_preview_details'), ENT_QUOTES, 'UTF-8') ?>"
   data-sports-preview-fights="<?= htmlspecialchars($t->text('sports_preview_fights'), ENT_QUOTES, 'UTF-8') ?>"
   data-sports-preview-updated="<?= htmlspecialchars($t->text('sports_preview_updated'), ENT_QUOTES, 'UTF-8') ?>"
+  data-feed-side-collapse="<?= htmlspecialchars($t->text('feed_side_collapse'), ENT_QUOTES, 'UTF-8') ?>"
+  data-feed-side-expand="<?= htmlspecialchars($t->text('feed_side_expand'), ENT_QUOTES, 'UTF-8') ?>"
   data-notifications-empty="<?= htmlspecialchars($t->text('notifications_empty'), ENT_QUOTES, 'UTF-8') ?>"
   data-notifications-unread-suffix="<?= htmlspecialchars($t->text('notifications_unread_count_suffix'), ENT_QUOTES, 'UTF-8') ?>"
 ></div>
 <?php require __DIR__ . '/cookie-notice.php'; ?>
 <?php require __DIR__ . '/scroll-top.php'; ?>
-<script src="/js/social-interactions.js?v=20260317a" defer></script>
+<script src="/js/social-interactions.js?v=20260317c" defer></script>
   </div>
 </div>

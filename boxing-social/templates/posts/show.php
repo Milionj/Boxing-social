@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('post_show_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
-  <link rel="stylesheet" href="/css/posts-index.css?v=20260317b">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
+  <link rel="stylesheet" href="/css/posts-index.css?v=20260317e">
   <link rel="stylesheet" href="/css/post-show.css?v=20260317b">
 </head>
 <body
@@ -198,7 +198,7 @@
               <?php if ($currentUserId !== null && (int) $currentUserId === (int) $post['user_id']): ?>
                 <div class="post__owner-actions">
                   <p><a href="/posts/edit?id=<?= (int) $post['id'] ?>"><?= htmlspecialchars($t->text('posts_edit'), ENT_QUOTES, 'UTF-8') ?></a></p>
-                  <form method="post" action="/posts/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('posts_delete_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
+                  <form method="post" action="/posts/delete" data-confirm="<?= htmlspecialchars($t->text('posts_delete_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
                     <button type="submit"><?= htmlspecialchars($t->text('posts_delete'), ENT_QUOTES, 'UTF-8') ?></button>
                   </form>
@@ -274,6 +274,6 @@
     </section>
   </main>
   <?php require dirname(__DIR__, 2) . '/templates/partials/app-footer.php'; ?>
-  <script src="/js/post-interactions.js?v=20260317g" defer></script>
+  <script src="/js/post-interactions.js?v=20260317j" defer></script>
 </body>
 </html>

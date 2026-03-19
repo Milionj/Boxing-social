@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const response = await fetch(`${endpoint}?q=${encodeURIComponent(value)}`, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin',
+          cache: 'no-store',
         });
         const data = await response.json();
         activeIndex = -1;

@@ -19,10 +19,12 @@
     notificationsEmpty: i18n.dataset.notificationsEmpty || 'Aucune notification pour le moment.',
     notificationsUnreadSuffix: i18n.dataset.notificationsUnreadSuffix || 'non lues',
   };
+  const csrfToken = i18n.dataset.csrfToken || '';
 
   const requestHeaders = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
+    ...(csrfToken !== '' ? { 'X-CSRF-Token': csrfToken } : {}),
   };
 
   document.addEventListener('submit', (event) => {
@@ -246,6 +248,8 @@
       method: (form.method || 'POST').toUpperCase(),
       body: body || new FormData(form),
       headers: requestHeaders,
+      credentials: 'same-origin',
+      cache: 'no-store',
     });
 
     const contentType = response.headers.get('Content-Type') || '';

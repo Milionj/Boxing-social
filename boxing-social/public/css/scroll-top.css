@@ -2,6 +2,8 @@ html {
   scroll-behavior: smooth;
 }
 
+@import url('/css/cookie-notice.css?v=20260317a');
+
 .scroll-top {
   position: fixed;
   right: 26px;

@@ -7,19 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('contact_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/contact-public.css?v=20260315i">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
-  <script>
-    window.BOXING_SOCIAL_FIREBASE_CONFIG = {
-      apiKey: <?= json_encode((string) ($_ENV['FIREBASE_API_KEY'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      authDomain: <?= json_encode((string) ($_ENV['FIREBASE_AUTH_DOMAIN'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      projectId: <?= json_encode((string) ($_ENV['FIREBASE_PROJECT_ID'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      storageBucket: <?= json_encode((string) ($_ENV['FIREBASE_STORAGE_BUCKET'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      messagingSenderId: <?= json_encode((string) ($_ENV['FIREBASE_MESSAGING_SENDER_ID'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      appId: <?= json_encode((string) ($_ENV['FIREBASE_APP_ID'] ?? ''), JSON_UNESCAPED_SLASHES) ?>,
-      measurementId: <?= json_encode((string) ($_ENV['FIREBASE_MEASUREMENT_ID'] ?? ''), JSON_UNESCAPED_SLASHES) ?>
-    };
-  </script>
-  <script type="module" src="/js/contact-firestore.js"></script>
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
 </head>
 <body class="contact-public-page">
   <main class="contact-public-shell">
@@ -57,13 +45,27 @@
         </div>
       </div>
 
-      <p class="msg-success" data-contact-success hidden></p>
-      <p class="msg-error" data-contact-error hidden></p>
+      <?php if ($success !== ''): ?>
+        <p class="msg-success"><?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?></p>
+      <?php endif; ?>
+
+      <?php if ($errors !== []): ?>
+        <?php foreach ($errors as $error): ?>
+          <p class="msg-error"><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></p>
+        <?php endforeach; ?>
+      <?php endif; ?>
 
       <form class="contact-public-form" method="post" action="/contact" data-contact-form>
+        <div class="contact-public-form__honeypot" aria-hidden="true">
+          <label>
+            Website
+            <input type="text" name="website" tabindex="-1" autocomplete="off">
+          </label>
+        </div>
+
         <label>
           <?= htmlspecialchars($t->text('contact_email'), ENT_QUOTES, 'UTF-8') ?>
-          <input type="email" name="email" placeholder="ton@email.com" value="<?= htmlspecialchars((string) ($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
+          <input type="email" name="email" placeholder="ton@email.com" value="<?= htmlspecialchars((string) ($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" maxlength="254" autocomplete="email" inputmode="email" pattern="<?= htmlspecialchars(\App\Core\InputValidator::EMAIL_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" required>
         </label>
 
         <label>
@@ -77,7 +79,7 @@
 
         <label>
           <?= htmlspecialchars($t->text('contact_message'), ENT_QUOTES, 'UTF-8') ?>
-          <textarea name="message" rows="7" placeholder="<?= htmlspecialchars($t->text('contact_message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" required><?= htmlspecialchars((string) ($old['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+          <textarea name="message" rows="7" minlength="20" maxlength="4000" placeholder="<?= htmlspecialchars($t->text('contact_message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" required><?= htmlspecialchars((string) ($old['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
         </label>
 
         <button type="submit" data-contact-submit><?= htmlspecialchars($t->text('contact_send'), ENT_QUOTES, 'UTF-8') ?></button>

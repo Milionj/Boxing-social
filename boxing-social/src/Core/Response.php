@@ -5,6 +5,11 @@ namespace App\Core;
 
 final class Response
 {
+    public function header(string $name, string $value): void
+    {
+        header($name . ': ' . $value);
+    }
+
     public function json(array $data, int $status = 200): void
     {
         http_response_code($status);
@@ -21,6 +26,10 @@ final class Response
 
     public function redirect(string $path): void
     {
+        if ($path === '' || !str_starts_with($path, '/') || str_starts_with($path, '//')) {
+            $path = '/';
+        }
+
         header("Location: {$path}");
         exit;
     }

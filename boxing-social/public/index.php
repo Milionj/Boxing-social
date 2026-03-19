@@ -1,9 +1,6 @@
 <?php
 declare(strict_types=1);
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-
 /**
  * Chargement manuel du .env, récupérer la config (DB, etc.).
  */
@@ -19,15 +16,27 @@ if (is_file($envFile)) {
         }
 
         [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
-        $_ENV[trim($key)] = trim($value);
+        $key = trim($key);
+        $value = trim($value);
+
+        if (
+            (str_starts_with($value, '"') && str_ends_with($value, '"'))
+            || (str_starts_with($value, "'") && str_ends_with($value, "'"))
+        ) {
+            $value = substr($value, 1, -1);
+        }
+
+        $_ENV[$key] = $value;
     }
 }
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Core\Request;
+use App\Core\RateLimiter;
 use App\Core\Response;
 use App\Core\Router;
+use App\Core\Security;
 use App\Database\Database;
 use App\Controllers\AuthController;
 use App\Controllers\ProfileController;
@@ -46,6 +55,7 @@ use App\Models\Friendship;
 use App\Models\Notification;
 use App\Models\Post;
 
+Security::configureErrorHandling($_ENV);
 
 // Cookie de session strictement necessaire :
 // - pas de persistance longue (lifetime 0)
@@ -53,12 +63,7 @@ use App\Models\Post;
 // - SameSite Lax pour reduire les risques CSRF de base
 // - Secure uniquement en HTTPS
 $appUrl = (string) ($_ENV['APP_URL'] ?? '');
-$appUrlScheme = parse_url($appUrl, PHP_URL_SCHEME);
-$isHttps = (
-    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
-    || $appUrlScheme === 'https'
-);
+$isHttps = Security::isHttps($appUrl);
 
 session_name('boxing_social_session');
 session_set_cookie_params([
@@ -72,11 +77,102 @@ ini_set('session.use_only_cookies', '1');
 ini_set('session.use_strict_mode', '1');
 
 session_start();
+Security::ensureCsrfToken();
+Security::applySecurityHeaders($isHttps, $_ENV);
 
 $request = new Request();
 $response = new Response();
+$rateLimiter = new RateLimiter($_ENV);
+
+ob_start();
 
 try {
+    if (
+        $request->method() === 'POST'
+        && (
+            !Security::requestHasTrustedOrigin($request, $appUrl)
+            || !Security::requestHasValidCsrf($request)
+        )
+    ) {
+        if ($request->expectsJson()) {
+            $response->json([
+                'ok' => false,
+                'message' => 'Requête refusée pour raisons de sécurité.',
+            ], 419);
+        } else {
+            $response->errorPage(419, '419');
+        }
+
+        $output = ob_get_clean() ?: '';
+        if (Security::shouldInjectCsrfIntoResponse($output)) {
+            $output = Security::injectCsrfIntoHtml($output);
+        }
+        echo $output;
+        exit;
+    }
+
+    if ($request->method() === 'POST') {
+        $rateLimitPolicies = [
+            '/login' => [
+                'limit' => 5,
+                'window' => 900,
+                'session_errors_key' => 'errors',
+                'redirect' => '/login',
+                'message' => 'Trop de tentatives de connexion. Réessaie dans quelques minutes.',
+            ],
+            '/register' => [
+                'limit' => 4,
+                'window' => 3600,
+                'session_errors_key' => 'errors',
+                'redirect' => '/register',
+                'message' => 'Trop de tentatives d’inscription. Réessaie plus tard.',
+            ],
+            '/contact' => [
+                'limit' => 5,
+                'window' => 3600,
+                'session_errors_key' => 'errors_contact',
+                'redirect' => '/contact',
+                'message' => 'Trop d’envois de contact. Réessaie plus tard.',
+            ],
+        ];
+
+        $currentPath = $request->path();
+        if (isset($rateLimitPolicies[$currentPath])) {
+            $policy = $rateLimitPolicies[$currentPath];
+            $result = $rateLimiter->consume(
+                $rateLimiter->clientFingerprint($request, $currentPath),
+                (int) $policy['limit'],
+                (int) $policy['window']
+            );
+
+            $response->header('X-RateLimit-Limit', (string) $result['limit']);
+            $response->header('X-RateLimit-Remaining', (string) $result['remaining']);
+            $response->header('X-RateLimit-Reset', (string) $result['reset_at']);
+
+            if (!$result['allowed']) {
+                $response->header('Retry-After', (string) $result['retry_after']);
+
+                if ($request->expectsJson()) {
+                    $response->json([
+                        'ok' => false,
+                        'message' => $policy['message'],
+                        'retryAfter' => $result['retry_after'],
+                    ], 429);
+                } else {
+                    $_SESSION[(string) $policy['session_errors_key']] = [(string) $policy['message']];
+                    $response->redirect((string) $policy['redirect']);
+                }
+
+                $output = ob_get_clean() ?: '';
+                if (Security::shouldInjectCsrfIntoResponse($output)) {
+                    $output = Security::injectCsrfIntoHtml($output);
+                }
+                echo $output;
+                exit;
+            }
+        }
+    }
+
     $router = new Router();
     $router->get('/register', fn() => (new AuthController())->showRegister($response));
     $router->post('/register', fn() => (new AuthController())->register($request, $response));
@@ -217,18 +313,28 @@ try {
     $router->post('/settings', fn() => (new SettingsController())->update($request, $response));
 
     $router->get('/health', function () use ($response): void {
-        $pdo = Database::getConnection();
-        $pdo->query('SELECT 1');
-        $response->json([
-            'status' => 'ok',
-            'db' => 'connected',
-        ]);
+        $payload = ['status' => 'ok'];
+
+        if (Security::isTruthy($_ENV['APP_DEBUG'] ?? '0')) {
+            $pdo = Database::getConnection();
+            $pdo->query('SELECT 1');
+            $payload['db'] = 'connected';
+        }
+
+        $response->json($payload);
     });
 
     $router->dispatch($request, $response);
 } catch (Throwable $e) {
-    if (($_ENV['APP_DEBUG'] ?? '0') === '1') {
+    if (Security::isTruthy($_ENV['APP_DEBUG'] ?? '0')) {
         error_log($e->getMessage());
     }
     $response->errorPage(500, '500');
 }
+
+$output = ob_get_clean() ?: '';
+if (Security::shouldInjectCsrfIntoResponse($output)) {
+    $output = Security::injectCsrfIntoHtml($output);
+}
+
+echo $output;
