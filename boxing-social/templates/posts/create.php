@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('posts_create_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/posts-create.css?v=20260315l">
   <script defer src="/js/post-media-preview.js?v=20260315m"></script>
   <script defer src="/js/post-form-draft.js?v=20260315m"></script>

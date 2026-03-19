@@ -9,7 +9,7 @@ $items = $notificationPresenter->presentMany($items, $t);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('notifications_page_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/notifications-index.css?v=20260315o">
 </head>
 <body class="app-shell">

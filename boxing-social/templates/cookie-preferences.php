@@ -14,7 +14,7 @@ $preferencesCookieName = CookiePreferencesController::COOKIE_NAME;
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('cookies_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/cookie-preferences.css?v=20260315i">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
 </head>
 <body class="cookies-page">
   <main class="cookies-shell">

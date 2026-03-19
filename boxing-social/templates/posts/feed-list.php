@@ -204,7 +204,7 @@ $siteLogoPath = '/img/Bonlogo.png';
               <?php if ($feedContext !== 'home' && $currentUserId !== null && (int) $currentUserId === (int) $post['user_id']): ?>
                 <div class="post__owner-actions">
                   <p><a href="/posts/edit?id=<?= (int) $post['id'] ?>"><?= htmlspecialchars($t->text('posts_edit'), ENT_QUOTES, 'UTF-8') ?></a></p>
-                  <form method="post" action="/posts/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('posts_delete_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
+                  <form method="post" action="/posts/delete" data-confirm="<?= htmlspecialchars($t->text('posts_delete_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
                     <button type="submit"><?= htmlspecialchars($t->text('posts_delete'), ENT_QUOTES, 'UTF-8') ?></button>
                   </form>

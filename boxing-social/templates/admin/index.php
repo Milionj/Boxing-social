@@ -186,7 +186,7 @@ $logTargetOptions = [
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('admin_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/admin-index.css?v=20260317a">
 </head>
 <body class="app-shell">
@@ -400,7 +400,7 @@ $logTargetOptions = [
                   <td>
                     <div class="admin-actions">
                       <a class="admin-link-chip" href="/post?id=<?= (int) $p['id'] ?>"><?= htmlspecialchars($t->text('admin_open_post'), ENT_QUOTES, 'UTF-8') ?></a>
-                      <form method="post" action="/admin/posts/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('admin_delete_post_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
+                      <form method="post" action="/admin/posts/delete" data-confirm="<?= htmlspecialchars($t->text('admin_delete_post_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($currentRequestUri, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="post_id" value="<?= (int) $p['id'] ?>">
                         <button type="submit"><?= htmlspecialchars($t->text('admin_delete'), ENT_QUOTES, 'UTF-8') ?></button>
@@ -476,7 +476,7 @@ $logTargetOptions = [
                   <td>
                     <div class="admin-actions">
                       <a class="admin-link-chip" href="/post?id=<?= (int) $c['post_id'] ?>"><?= htmlspecialchars($t->text('admin_open_post_short'), ENT_QUOTES, 'UTF-8') ?></a>
-                      <form method="post" action="/admin/comments/delete" onsubmit="return confirm('<?= htmlspecialchars($t->text('admin_delete_comment_confirm'), ENT_QUOTES, 'UTF-8') ?>');">
+                      <form method="post" action="/admin/comments/delete" data-confirm="<?= htmlspecialchars($t->text('admin_delete_comment_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($currentRequestUri, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="comment_id" value="<?= (int) $c['id'] ?>">
                         <button type="submit"><?= htmlspecialchars($t->text('admin_delete'), ENT_QUOTES, 'UTF-8') ?></button>

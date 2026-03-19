@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>404 - Page introuvable</title>
   <link rel="stylesheet" href="/css/errors.css">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
 </head>
 <body>
   <main class="page">

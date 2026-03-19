@@ -16,6 +16,9 @@ final class FirebaseContactService
             throw new RuntimeException('Configuration Firebase manquante: FIREBASE_DATABASE_URL');
         }
 
+        // Le write passe par le backend pour éviter d'exposer une capacité
+        // d'écriture directe au navigateur et pour laisser le rate limiting
+        // décider qui peut réellement soumettre le formulaire.
         $url = $databaseUrl . '/contact_messages.json';
         if ($databaseSecret !== '') {
             $url .= '?auth=' . rawurlencode($databaseSecret);
@@ -37,6 +40,7 @@ final class FirebaseContactService
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
+            CURLOPT_FAILONERROR => false,
         ]);
 
         $result = curl_exec($ch);

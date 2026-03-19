@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\InputValidator;
 use App\Core\Request;
 use App\Core\Response;
 use App\Services\AuthService;
@@ -48,7 +49,7 @@ final class AuthController
     {
         // Nettoyage (trim) + normalisation email en lowercase
         $username = trim((string) $request->input('username', ''));
-        $email = strtolower(trim((string) $request->input('email', '')));
+        $email = InputValidator::normalizeEmail((string) $request->input('email', ''));
         $password = (string) $request->input('password', '');
         $passwordConfirm = (string) $request->input('password_confirm', '');
 
@@ -63,21 +64,11 @@ final class AuthController
         }
 
         // Validation email
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (!InputValidator::isValidEmail($email)) {
             $errors[] = 'Email invalide.';
         }
 
-        // Règles mot de passe : longueur + complexité
-        if (strlen($password) < 8) {
-            $errors[] = 'Le mot de passe doit contenir au moins 8 caractères.';
-        }
-        if (
-            !preg_match('/[A-Z]/', $password) ||
-            !preg_match('/[a-z]/', $password) ||
-            !preg_match('/[0-9]/', $password)
-        ) {
-            $errors[] = 'Le mot de passe doit contenir majuscule, minuscule et chiffre.';
-        }
+        $errors = [...$errors, ...InputValidator::passwordErrors($password, 'Le mot de passe')];
 
         // Confirmation mot de passe
         if ($password !== $passwordConfirm) {
@@ -139,12 +130,12 @@ final class AuthController
      */
     public function login(Request $request, Response $response): void
     {
-        $email = strtolower(trim((string) $request->input('email', '')));
+        $email = InputValidator::normalizeEmail((string) $request->input('email', ''));
         $password = (string) $request->input('password', '');
 
         $errors = [];
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (!InputValidator::isValidEmail($email)) {
             $errors[] = 'Email invalide.';
         }
         if ($password === '') {
@@ -176,6 +167,6 @@ final class AuthController
     public function logout(Response $response): void
     {
         $this->auth->logout();
-        $response->redirect('/login');
+        $response->redirect('/login?logged_out=1');
     }
 }

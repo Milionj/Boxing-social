@@ -8,6 +8,15 @@ use PDO;
 
 final class AuthService
 {
+    private const CLEARABLE_AUTH_COOKIES = [
+        'jwt',
+        'JWT',
+        'token',
+        'access_token',
+        'refresh_token',
+        'auth_token',
+        'remember_token',
+    ];
 
 /**
      * Connexion PDO réutilisée pour toutes les opérations d'auth.
@@ -58,6 +67,10 @@ final class AuthService
             return false;
         }
 
+        if (password_needs_rehash((string) $user['password_hash'], PASSWORD_DEFAULT)) {
+            $this->rehashPassword((int) $user['id'], $password);
+        }
+
         session_regenerate_id(true);
         $_SESSION['user'] = [
             'id' => (int)$user['id'],
@@ -100,6 +113,27 @@ public function updatePassword(int $userId, string $newPassword): bool
     public function logout(): void
     {
         $_SESSION = [];
+        $this->expireSessionCookie();
+        $this->expireAuthCookies();
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
+    }
+
+    private function rehashPassword(int $userId, string $plainPassword): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET password_hash = :hash, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+        );
+        $stmt->execute([
+            'hash' => password_hash($plainPassword, PASSWORD_DEFAULT),
+            'id' => $userId,
+        ]);
+    }
+
+    private function expireSessionCookie(): void
+    {
         if (ini_get('session.use_cookies')) {
             $param = session_get_cookie_params();
             $options = [
@@ -116,6 +150,26 @@ public function updatePassword(int $userId, string $newPassword): bool
 
             setcookie(session_name(), '', $options);
         }
-        session_destroy();
+    }
+
+    private function expireAuthCookies(): void
+    {
+        $params = session_get_cookie_params();
+
+        foreach (self::CLEARABLE_AUTH_COOKIES as $cookieName) {
+            $options = [
+                'expires' => time() - 42000,
+                'path' => $params['path'] ?? '/',
+                'secure' => (bool) ($params['secure'] ?? false),
+                'httponly' => true,
+                'samesite' => $params['samesite'] ?? 'Lax',
+            ];
+
+            if (!empty($params['domain'])) {
+                $options['domain'] = $params['domain'];
+            }
+
+            setcookie($cookieName, '', $options);
+        }
     }
 }

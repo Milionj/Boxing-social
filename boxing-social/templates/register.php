@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inscription</title>
   <link rel="stylesheet" href="/css/auth.css?v=20260315i">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
 </head>
 <body class="auth-page">
   <main class="auth-layout">
@@ -51,22 +51,22 @@
       <form class="auth-form" method="post" action="/register">
         <label class="auth-field">
           <span>Pseudo</span>
-          <input name="username" placeholder="Pseudo" required value="<?= htmlspecialchars((string)($old['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+          <input name="username" placeholder="Pseudo" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_]{3,30}" required value="<?= htmlspecialchars((string)($old['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         </label>
 
         <label class="auth-field">
           <span>Email</span>
-          <input name="email" type="email" placeholder="ton@email.com" required value="<?= htmlspecialchars((string)($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+          <input name="email" type="email" placeholder="ton@email.com" maxlength="254" autocomplete="email" inputmode="email" pattern="<?= htmlspecialchars(\App\Core\InputValidator::EMAIL_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars((string)($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         </label>
 
         <label class="auth-field">
           <span>Mot de passe</span>
-          <input name="password" type="password" placeholder="Mot de passe" required>
+          <input name="password" type="password" placeholder="Mot de passe" autocomplete="new-password" minlength="12" pattern="<?= htmlspecialchars(\App\Core\InputValidator::PASSWORD_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" title="12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial." required>
         </label>
 
         <label class="auth-field">
           <span>Confirmer le mot de passe</span>
-          <input name="password_confirm" type="password" placeholder="Confirmer le mot de passe" required>
+          <input name="password_confirm" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" minlength="12" pattern="<?= htmlspecialchars(\App\Core\InputValidator::PASSWORD_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" title="12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial." required>
         </label>
 
         <button type="submit">Créer mon compte</button>

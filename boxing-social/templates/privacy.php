@@ -15,7 +15,7 @@ require dirname(__DIR__) . '/templates/partials/app-locale.php';
   <title><?= htmlspecialchars($t->text('privacy_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/privacy-public.css?v=20260315i">
   <link rel="stylesheet" href="/css/cookie-preferences.css?v=20260315i">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
 </head>
 <body class="privacy-page">
   <main class="privacy-shell">

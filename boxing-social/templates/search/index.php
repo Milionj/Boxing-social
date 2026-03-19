@@ -54,9 +54,9 @@ $excerpt = static function (string $text, int $limit = 180): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($t->text('nav_search'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/search-index.css?v=20260317a">
-  <script src="/js/search-autocomplete.js" defer></script>
+  <script src="/js/search-autocomplete.js?v=20260317a" defer></script>
 </head>
 <body class="app-shell">
   <?php require dirname(__DIR__) . '/partials/app-navbar.php'; ?>

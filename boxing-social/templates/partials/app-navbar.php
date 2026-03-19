@@ -84,9 +84,7 @@ $topbarTitle = match (true) {
     default => 'Boxing Social',
 };
 ?>
-<script>
-  document.body.dataset.theme = <?= json_encode($navTheme, JSON_UNESCAPED_SLASHES) ?>;
-</script>
+<div hidden data-body-theme="<?= htmlspecialchars($navTheme, ENT_QUOTES, 'UTF-8') ?>"></div>
 <div class="app-shell-layout">
   <aside class="app-sidebar">
     <div class="app-sidebar__brand">

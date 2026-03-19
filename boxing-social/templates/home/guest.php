@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Boxing Social</title>
   <link rel="stylesheet" href="/css/guest-home.css?v=20260315i">
-  <link rel="stylesheet" href="/css/scroll-top.css?v=20260315i">
+  <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
   <script defer src="/js/guest-hero.js?v=20260314a"></script>
 </head>
 <body class="guest-page">

@@ -90,6 +90,12 @@
   margin-bottom: 14px;
 }
 
+.feed-side-card__head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .feed-side-card__head h2 {
   margin: 4px 0 0;
   color: #fff7eb;
@@ -106,6 +112,40 @@
 
 .feed-side-card__head a:hover {
   color: #fff3ec;
+}
+
+.feed-side-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f3efe8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.feed-side-card__toggle:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.feed-side-card__toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.feed-side-card.is-collapsed .feed-side-card__toggle-icon {
+  transform: rotate(180deg);
 }
 
 .feed-side-card__eyebrow {
@@ -169,6 +209,18 @@
   color: #cdbfae;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.feed-side-card__body[hidden] {
+  display: none;
+}
+
+.feed-side-card.is-collapsed {
+  gap: 0;
+}
+
+.feed-side-card.is-collapsed .feed-side-card__head {
+  margin-bottom: 0;
 }
 
 .feed-side-sports {
@@ -1534,6 +1586,15 @@ button {
   .feed-side-card--sports {
     max-height: none;
     overflow: visible;
+  }
+
+  .feed-side-card__head {
+    flex-wrap: wrap;
+  }
+
+  .feed-side-card__head-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .feed-side-sports__list {

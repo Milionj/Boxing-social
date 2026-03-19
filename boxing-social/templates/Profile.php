@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($t->text('profile_title'), ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="/css/app-shell.css?v=20260315o">
+  <link rel="stylesheet" href="/css/app-shell.css?v=20260317p">
   <link rel="stylesheet" href="/css/profile.css?v=20260315i">
 </head>
 <body class="app-shell">
@@ -70,12 +70,12 @@
           <form class="profile-form" method="post" action="/profile">
             <label>
               <span><?= htmlspecialchars($t->text('profile_username'), ENT_QUOTES, 'UTF-8') ?></span>
-              <input name="username" required value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
+              <input name="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_]{3,30}" required value="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>">
             </label>
 
             <label>
               <span><?= htmlspecialchars($t->text('profile_email'), ENT_QUOTES, 'UTF-8') ?></span>
-              <input name="email" type="email" required value="<?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?>">
+              <input name="email" type="email" maxlength="254" autocomplete="email" inputmode="email" pattern="<?= htmlspecialchars(\App\Core\InputValidator::EMAIL_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars((string) $user['email'], ENT_QUOTES, 'UTF-8') ?>">
             </label>
 
             <label class="profile-form__bio">
@@ -143,18 +143,18 @@
           <form class="profile-form" method="post" action="/profile/password">
             <label>
               <span><?= htmlspecialchars($t->text('profile_password_current'), ENT_QUOTES, 'UTF-8') ?></span>
-              <input type="password" name="current_password" required>
+              <input type="password" name="current_password" autocomplete="current-password" minlength="12" required>
             </label>
             <label>
               <span><?= htmlspecialchars($t->text('profile_password_new'), ENT_QUOTES, 'UTF-8') ?></span>
-              <input type="password" name="new_password" required>
+              <input type="password" name="new_password" autocomplete="new-password" minlength="12" pattern="<?= htmlspecialchars(\App\Core\InputValidator::PASSWORD_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" title="12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial." required>
             </label>
             <label>
               <span><?= htmlspecialchars($t->text('profile_password_confirm'), ENT_QUOTES, 'UTF-8') ?></span>
-              <input type="password" name="confirm_password" required>
+              <input type="password" name="confirm_password" autocomplete="new-password" minlength="12" pattern="<?= htmlspecialchars(\App\Core\InputValidator::PASSWORD_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" title="12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial." required>
             </label>
             <div class="profile-form__footer">
-              <small>8 caractères minimum, avec majuscule, minuscule et chiffre.</small>
+              <small>12 caractères minimum, avec majuscule, minuscule, chiffre et caractère spécial.</small>
               <button type="submit"><?= htmlspecialchars($t->text('profile_password_update'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
           </form>
