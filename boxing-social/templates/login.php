@@ -7,6 +7,9 @@
   <title>Connexion</title>
   <link rel="stylesheet" href="/css/auth.css?v=20260315i">
   <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
+  <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+    <script src="https://www.google.com/recaptcha/api.js?hl=fr" async defer></script>
+  <?php endif; ?>
 </head>
 <body class="auth-page"<?= $loggedOut ? ' data-logout-cleanup="1"' : '' ?>>
   <main class="auth-layout">
@@ -57,6 +60,12 @@
           <span>Mot de passe</span>
           <input name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" minlength="12" required>
         </label>
+
+        <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+          <div class="auth-recaptcha">
+            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars((string) $recaptchaSiteKey, ENT_QUOTES, 'UTF-8') ?>"></div>
+          </div>
+        <?php endif; ?>
 
         <button type="submit">Se connecter</button>
       </form>

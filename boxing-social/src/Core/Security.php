@@ -172,23 +172,48 @@ final class Security
 
     private static function buildCsp(bool $isHttps, array $env): string
     {
+        $frameSrc = ["'none'"];
+        $fontSrc = ["'self'", 'data:', 'https://fonts.gstatic.com'];
+        $connectSrc = ["'self'"];
+        $scriptSrc = ["'self'"];
+        $styleSrc = ["'self'"];
+        $styleSrcElem = ["'self'", 'https://fonts.googleapis.com'];
+
+        if (self::isTruthy(($env['RECAPTCHA_ENABLED'] ?? '1')) && self::isRecaptchaConfigured($env)) {
+            $frameSrc = [
+                'https://www.google.com/recaptcha/',
+                'https://recaptcha.google.com/recaptcha/',
+            ];
+            $connectSrc[] = 'https://www.google.com/recaptcha/';
+            $scriptSrc[] = 'https://www.google.com/recaptcha/';
+            $scriptSrc[] = 'https://www.gstatic.com/recaptcha/';
+            $styleSrc[] = "'unsafe-inline'";
+        }
+
+        if (self::isFirebaseClientConfigured($env)) {
+            $connectSrc[] = 'https://firestore.googleapis.com';
+            $connectSrc[] = 'https://firebaseinstallations.googleapis.com';
+            $connectSrc[] = 'https://www.googleapis.com';
+            $scriptSrc[] = 'https://www.gstatic.com/firebasejs/';
+        }
+
         $directives = [
             "default-src 'self'",
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'self'",
             "object-src 'none'",
-            "frame-src 'none'",
+            'frame-src ' . implode(' ', $frameSrc),
             "manifest-src 'self'",
             "img-src 'self' data: blob:",
-            "font-src 'self' data: https://fonts.gstatic.com",
+            'font-src ' . implode(' ', $fontSrc),
             "media-src 'self' blob:",
             "worker-src 'self' blob:",
-            "connect-src 'self'",
-            "script-src 'self'",
+            'connect-src ' . implode(' ', $connectSrc),
+            'script-src ' . implode(' ', $scriptSrc),
             "script-src-attr 'none'",
-            "style-src 'self'",
-            "style-src-elem 'self' https://fonts.googleapis.com",
+            'style-src ' . implode(' ', $styleSrc),
+            'style-src-elem ' . implode(' ', $styleSrcElem),
             "style-src-attr 'unsafe-inline'",
         ];
 
@@ -197,6 +222,19 @@ final class Security
         }
 
         return implode('; ', $directives);
+    }
+
+    private static function isRecaptchaConfigured(array $env): bool
+    {
+        return trim((string) ($env['RECAPTCHA_SITE_KEY'] ?? '')) !== ''
+            && trim((string) ($env['RECAPTCHA_SECRET_KEY'] ?? '')) !== '';
+    }
+
+    private static function isFirebaseClientConfigured(array $env): bool
+    {
+        return trim((string) ($env['FIREBASE_API_KEY'] ?? '')) !== ''
+            && trim((string) ($env['FIREBASE_PROJECT_ID'] ?? '')) !== ''
+            && trim((string) ($env['FIREBASE_APP_ID'] ?? '')) !== '';
     }
 
     private static function currentOrigin(string $appUrl = ''): string

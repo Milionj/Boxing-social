@@ -8,6 +8,12 @@
   <title><?= htmlspecialchars($t->text('contact_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="/css/contact-public.css?v=20260315i">
   <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
+  <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+    <script src="https://www.google.com/recaptcha/api.js?hl=<?= htmlspecialchars((string) $htmlLang, ENT_QUOTES, 'UTF-8') ?>" async defer></script>
+  <?php endif; ?>
+  <?php if (!empty($useClientFirebaseFallback)): ?>
+    <script type="module" src="/js/contact-firestore.js?v=20260320a"></script>
+  <?php endif; ?>
 </head>
 <body class="contact-public-page">
   <main class="contact-public-shell">
@@ -55,7 +61,31 @@
         <?php endforeach; ?>
       <?php endif; ?>
 
-      <form class="contact-public-form" method="post" action="/contact" data-contact-form>
+      <?php if (!empty($useClientFirebaseFallback)): ?>
+        <p class="msg-success" data-contact-success hidden></p>
+        <p class="msg-error" data-contact-error hidden></p>
+      <?php endif; ?>
+
+      <form
+        class="contact-public-form"
+        method="post"
+        action="/contact"
+        data-contact-form
+        <?= !empty($useClientFirebaseFallback) ? 'data-contact-client-form data-contact-mode="firebase-client"' : 'data-contact-mode="server"' ?>
+        data-firebase-api-key="<?= htmlspecialchars((string) ($firebaseClientConfig['apiKey'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-auth-domain="<?= htmlspecialchars((string) ($firebaseClientConfig['authDomain'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-project-id="<?= htmlspecialchars((string) ($firebaseClientConfig['projectId'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-storage-bucket="<?= htmlspecialchars((string) ($firebaseClientConfig['storageBucket'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-messaging-sender-id="<?= htmlspecialchars((string) ($firebaseClientConfig['messagingSenderId'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-app-id="<?= htmlspecialchars((string) ($firebaseClientConfig['appId'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-firebase-measurement-id="<?= htmlspecialchars((string) ($firebaseClientConfig['measurementId'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+        data-contact-success-message="<?= htmlspecialchars($t->text('contact_success_sent'), ENT_QUOTES, 'UTF-8') ?>"
+        data-contact-error-config="Configuration Firestore incomplète."
+        data-contact-error-invalid="<?= htmlspecialchars($t->text('contact_error_message_short'), ENT_QUOTES, 'UTF-8') ?>"
+        data-contact-error-recaptcha="<?= htmlspecialchars($t->text('contact_error_recaptcha_required'), ENT_QUOTES, 'UTF-8') ?>"
+        data-contact-send-label="<?= htmlspecialchars($t->text('contact_send'), ENT_QUOTES, 'UTF-8') ?>"
+        data-contact-sending-label="Envoi..."
+      >
         <div class="contact-public-form__honeypot" aria-hidden="true">
           <label>
             Website
@@ -81,6 +111,12 @@
           <?= htmlspecialchars($t->text('contact_message'), ENT_QUOTES, 'UTF-8') ?>
           <textarea name="message" rows="7" minlength="20" maxlength="4000" placeholder="<?= htmlspecialchars($t->text('contact_message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" required><?= htmlspecialchars((string) ($old['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
         </label>
+
+        <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+          <div class="contact-public-form__recaptcha">
+            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars((string) $recaptchaSiteKey, ENT_QUOTES, 'UTF-8') ?>"></div>
+          </div>
+        <?php endif; ?>
 
         <button type="submit" data-contact-submit><?= htmlspecialchars($t->text('contact_send'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>

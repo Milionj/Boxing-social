@@ -6,6 +6,9 @@
   <title>Inscription</title>
   <link rel="stylesheet" href="/css/auth.css?v=20260315i">
   <link rel="stylesheet" href="/css/scroll-top.css?v=20260317a">
+  <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+    <script src="https://www.google.com/recaptcha/api.js?hl=fr" async defer></script>
+  <?php endif; ?>
 </head>
 <body class="auth-page">
   <main class="auth-layout">
@@ -68,6 +71,12 @@
           <span>Confirmer le mot de passe</span>
           <input name="password_confirm" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" minlength="12" pattern="<?= htmlspecialchars(\App\Core\InputValidator::PASSWORD_HTML_PATTERN, ENT_QUOTES, 'UTF-8') ?>" title="12 caractères minimum avec majuscule, minuscule, chiffre et caractère spécial." required>
         </label>
+
+        <?php if (($recaptchaSiteKey ?? '') !== ''): ?>
+          <div class="auth-recaptcha">
+            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars((string) $recaptchaSiteKey, ENT_QUOTES, 'UTF-8') ?>"></div>
+          </div>
+        <?php endif; ?>
 
         <button type="submit">Créer mon compte</button>
       </form>

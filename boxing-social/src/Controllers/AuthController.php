@@ -7,6 +7,8 @@ use App\Core\InputValidator;
 use App\Core\Request;
 use App\Core\Response;
 use App\Services\AuthService;
+use App\Services\RecaptchaService;
+use RuntimeException;
 
 /**
  * Principe important : POST -> redirect -> GET (pattern PRG)
@@ -14,11 +16,13 @@ use App\Services\AuthService;
 final class AuthController
 {
     private AuthService $auth;
+    private RecaptchaService $recaptcha;
 
     public function __construct()
     {
         // Service d'auth (DB + password_hash/verify)
         $this->auth = new AuthService();
+        $this->recaptcha = new RecaptchaService();
     }
 
     /**
@@ -31,6 +35,7 @@ final class AuthController
     {
         $errors = $_SESSION['errors'] ?? [];
         $old = $_SESSION['old'] ?? [];
+        $recaptchaSiteKey = $this->recaptcha->siteKey();
 
         // Important : on vide après lecture pour éviter d'afficher les mêmes erreurs au refresh
         unset($_SESSION['errors'], $_SESSION['old']);
@@ -52,6 +57,7 @@ final class AuthController
         $email = InputValidator::normalizeEmail((string) $request->input('email', ''));
         $password = (string) $request->input('password', '');
         $passwordConfirm = (string) $request->input('password_confirm', '');
+        $recaptchaToken = (string) $request->input('g-recaptcha-response', '');
 
         $errors = [];
 
@@ -82,6 +88,16 @@ final class AuthController
         }
         if ($this->auth->emailExists($email)) {
             $errors[] = 'Cet email est déjà utilisé.';
+        }
+
+        try {
+            $recaptchaResult = $this->recaptcha->verify($recaptchaToken, (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        } catch (RuntimeException) {
+            $recaptchaResult = ['ok' => false, 'reason' => 'verification-unavailable'];
+        }
+
+        if (!$recaptchaResult['ok']) {
+            $errors[] = $this->recaptchaErrorMessage($recaptchaResult['reason']);
         }
 
         // Si erreurs : on stocke et on redirige vers le formulaire
@@ -115,6 +131,7 @@ final class AuthController
         $errors = $_SESSION['errors'] ?? [];
         $success = $_SESSION['success'] ?? '';
         $old = $_SESSION['old'] ?? [];
+        $recaptchaSiteKey = $this->recaptcha->siteKey();
 
         unset($_SESSION['errors'], $_SESSION['success'], $_SESSION['old']);
 
@@ -132,6 +149,7 @@ final class AuthController
     {
         $email = InputValidator::normalizeEmail((string) $request->input('email', ''));
         $password = (string) $request->input('password', '');
+        $recaptchaToken = (string) $request->input('g-recaptcha-response', '');
 
         $errors = [];
 
@@ -144,6 +162,19 @@ final class AuthController
 
         if ($errors !== []) {
             $_SESSION['errors'] = $errors;
+            $_SESSION['old'] = ['email' => $email];
+            $response->redirect('/login');
+            return;
+        }
+
+        try {
+            $recaptchaResult = $this->recaptcha->verify($recaptchaToken, (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        } catch (RuntimeException) {
+            $recaptchaResult = ['ok' => false, 'reason' => 'verification-unavailable'];
+        }
+
+        if (!$recaptchaResult['ok']) {
+            $_SESSION['errors'] = [$this->recaptchaErrorMessage($recaptchaResult['reason'])];
             $_SESSION['old'] = ['email' => $email];
             $response->redirect('/login');
             return;
@@ -168,5 +199,15 @@ final class AuthController
     {
         $this->auth->logout();
         $response->redirect('/login?logged_out=1');
+    }
+
+    private function recaptchaErrorMessage(string $reason): string
+    {
+        return match ($reason) {
+            'missing-token' => 'Valide le reCAPTCHA pour continuer.',
+            'verification-unavailable' => 'Le service reCAPTCHA est indisponible pour le moment.',
+            'hostname-mismatch' => 'La vérification reCAPTCHA ne correspond pas au domaine attendu.',
+            default => 'La vérification reCAPTCHA a échoué. Réessaie.',
+        };
     }
 }

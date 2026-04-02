@@ -7,6 +7,7 @@ use App\Core\InputValidator;
 use App\Core\Request;
 use App\Core\Response;
 use App\Services\FirebaseContactService;
+use App\Services\RecaptchaService;
 use App\Services\Translator;
 use App\Models\UserSettings;
 use RuntimeException;
@@ -14,10 +15,12 @@ use RuntimeException;
 final class ContactController
 {
     private FirebaseContactService $contactService;
+    private RecaptchaService $recaptcha;
 
     public function __construct()
     {
         $this->contactService = new FirebaseContactService();
+        $this->recaptcha = new RecaptchaService();
     }
 
     public function show(Response $response): void
@@ -25,6 +28,17 @@ final class ContactController
         $success = $_SESSION['success_contact'] ?? '';
         $errors = $_SESSION['errors_contact'] ?? [];
         $old = $_SESSION['old_contact'] ?? [];
+        $recaptchaSiteKey = $this->recaptcha->siteKey();
+        $useClientFirebaseFallback = $this->canUseClientFirebaseFallback();
+        $firebaseClientConfig = [
+            'apiKey' => (string) ($_ENV['FIREBASE_API_KEY'] ?? ''),
+            'authDomain' => (string) ($_ENV['FIREBASE_AUTH_DOMAIN'] ?? ''),
+            'projectId' => (string) ($_ENV['FIREBASE_PROJECT_ID'] ?? ''),
+            'storageBucket' => (string) ($_ENV['FIREBASE_STORAGE_BUCKET'] ?? ''),
+            'messagingSenderId' => (string) ($_ENV['FIREBASE_MESSAGING_SENDER_ID'] ?? ''),
+            'appId' => (string) ($_ENV['FIREBASE_APP_ID'] ?? ''),
+            'measurementId' => (string) ($_ENV['FIREBASE_MEASUREMENT_ID'] ?? ''),
+        ];
 
         unset($_SESSION['success_contact'], $_SESSION['errors_contact'], $_SESSION['old_contact']);
 
@@ -37,6 +51,7 @@ final class ContactController
         $subject = trim((string) $request->input('subject', ''));
         $message = trim((string) $request->input('message', ''));
         $honeypot = trim((string) $request->input('website', ''));
+        $recaptchaToken = (string) $request->input('g-recaptcha-response', '');
 
         $allowedSubjects = [
             'question_generale',
@@ -80,6 +95,18 @@ final class ContactController
             $errors[] = $this->translator()->text('contact_error_message_long');
         }
 
+        if ($errors === []) {
+            try {
+                $recaptchaResult = $this->recaptcha->verify($recaptchaToken, (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+            } catch (RuntimeException) {
+                $recaptchaResult = ['ok' => false, 'reason' => 'verification-unavailable'];
+            }
+
+            if (!$recaptchaResult['ok']) {
+                $errors[] = $this->recaptchaErrorMessage($recaptchaResult['reason']);
+            }
+        }
+
         if ($errors !== []) {
             $_SESSION['errors_contact'] = $errors;
             $response->redirect('/contact');
@@ -101,7 +128,12 @@ final class ContactController
                 'userAgent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]);
         } catch (RuntimeException $exception) {
-            $_SESSION['errors_contact'] = [$this->translator()->text('contact_error_delivery_failed')];
+            $message = $this->translator()->text('contact_error_delivery_failed');
+            if (\App\Core\Security::isTruthy($_ENV['APP_DEBUG'] ?? '0')) {
+                $message .= ' [' . $exception->getMessage() . ']';
+            }
+
+            $_SESSION['errors_contact'] = [$message];
             $response->redirect('/contact');
             return;
         }
@@ -137,5 +169,27 @@ final class ContactController
         }
 
         return 'unknown';
+    }
+
+    private function recaptchaErrorMessage(string $reason): string
+    {
+        return match ($reason) {
+            'missing-token' => $this->translator()->text('contact_error_recaptcha_required'),
+            'verification-unavailable' => $this->translator()->text('contact_error_recaptcha_unavailable'),
+            'hostname-mismatch' => $this->translator()->text('contact_error_recaptcha_failed'),
+            default => $this->translator()->text('contact_error_recaptcha_failed'),
+        };
+    }
+
+    private function canUseClientFirebaseFallback(): bool
+    {
+        $hasBackendConfig = trim((string) ($_ENV['FIREBASE_DATABASE_URL'] ?? '')) !== '';
+        if ($hasBackendConfig) {
+            return false;
+        }
+
+        return trim((string) ($_ENV['FIREBASE_API_KEY'] ?? '')) !== ''
+            && trim((string) ($_ENV['FIREBASE_PROJECT_ID'] ?? '')) !== ''
+            && trim((string) ($_ENV['FIREBASE_APP_ID'] ?? '')) !== '';
     }
 }

@@ -181,6 +181,10 @@ body.contact-public-page::before {
   max-width: 820px;
 }
 
+.contact-public-form__recaptcha {
+  overflow-x: auto;
+}
+
 .contact-public-form__honeypot {
   position: absolute;
   left: -9999px;

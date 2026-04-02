@@ -18,6 +18,7 @@
     '[data-friend-remove-form]',
     '[data-message-send-form]',
     '[data-messages-open-form]',
+    '[data-contact-client-form]',
   ];
 
   const AUTH_STORAGE_KEYS = [

@@ -180,6 +180,10 @@ body.auth-page::before {
   gap: 16px;
 }
 
+.auth-recaptcha {
+  overflow-x: auto;
+}
+
 .auth-field {
   display: grid;
   gap: 8px;
